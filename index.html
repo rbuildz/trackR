@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>trackR</title>
+<title>rbuilds / trackR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -216,12 +216,32 @@
   /* ---- Rarity system: a day's "sword" rarity based on goals hit ---- */
   #rarityFrame{
     position:fixed; inset:0; pointer-events:none; z-index:2500;
-    box-shadow: inset 0 0 0 5px transparent;
+    box-shadow: inset 0 0 0 5px var(--pulse-color, transparent), inset 0 0 40px -20px var(--pulse-color, transparent);
     transition: box-shadow 0.4s ease;
   }
+  @keyframes legendaryPulse{
+    0%,100%{ box-shadow: inset 0 0 0 5px var(--pulse-color), inset 0 0 40px -20px var(--pulse-color); }
+    50%{ box-shadow: inset 0 0 0 9px var(--pulse-color), inset 0 0 80px -10px var(--pulse-color); }
+  }
+  #rarityFrame.legendary-pulse{ animation: legendaryPulse 0.8s ease-in-out 3; }
   .rarity-badge{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;}
+  .rarity-streak{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);}
   .rarity-week-avg{display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-mute);margin-bottom:12px;}
   .rarity-week-avg b{font-weight:500;}
+  .month-grid{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;}
+  .month-cell{width:13px;height:13px;border-radius:2px;}
+
+  .tier-toast{
+    display:none; position:fixed; top:70px; right:20px; z-index:2600;
+    background:var(--panel-2); border:1px solid var(--gold-dim); border-radius:3px;
+    padding:12px 16px; font-family:'Outfit',sans-serif; font-size:13px; max-width:220px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);
+    animation: toastIn 0.3s ease;
+  }
+  @keyframes toastIn{ from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);} }
+  .tier-toast .check-item{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-top:6px;}
+  .tier-toast .check-item.met{color:var(--text);}
+  .tier-toast .check-mark{width:12px;text-align:center;flex-shrink:0;}
 
   /* ---- Responsive: narrow screens drop secondary columns ---- */
   @media(max-width:640px){.board{grid-template-columns:1fr;} .grid2{grid-template-columns:1fr;} .weekrow,.weekhead{grid-template-columns:50px 1fr 1fr 30px;font-size:9px;}
@@ -231,6 +251,7 @@
 </head>
 <body>
 <div id="rarityFrame"></div>
+<div id="tierUpgradeToast" class="tier-toast"></div>
 <div id="qb">
 <div class="wrap">
 
@@ -244,7 +265,7 @@
         <h1>Today's quests</h1>
       </div>
     </div>
-    <div class="date"><span id="dateDisplay"></span> · <span id="timeDisplay"></span> · <span id="rarityBadge" class="rarity-badge"></span></div>
+    <div class="date"><span id="dateDisplay"></span> · <span id="timeDisplay"></span> · <span id="rarityBadge" class="rarity-badge"></span> <span id="rarityStreak" class="rarity-streak"></span></div>
   </div>
 
   <section class="block" style="border-top:none;padding-top:0;">
@@ -328,6 +349,8 @@
     <div id="weekRarityAvg" class="rarity-week-avg"></div>
     <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-bottom:10px;">Click a day to see its breakdown below</div>
     <div id="weekHistory"></div>
+    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Last 30 days</h2>
+    <div id="monthGrid" class="month-grid"></div>
     <h2 class="section-title" style="font-size:14px;margin-top:22px;">Time by category (7 days)</h2>
     <div id="categoryBreakdown"></div>
   </section>
@@ -443,6 +466,15 @@ function todayKey(){
   return keyFromDate(logicalNow());
 }
 
+/** Same 5am-boundary logic as logicalNow()/todayKey(), but for an arbitrary
+ *  Date instead of "right now" — used to file a completion under the
+ *  correct logical day when un-completing a quest (see onDrop). */
+function logicalKeyForDate(d){
+  const adjusted = new Date(d);
+  if(adjusted.getHours() < 5) adjusted.setDate(adjusted.getDate()-1);
+  return keyFromDate(adjusted);
+}
+
 function keyMinusDays(key, days){
   const d = new Date(key+'T00:00:00');
   d.setDate(d.getDate()-days);
@@ -469,6 +501,7 @@ function normalizeState(){
   if(typeof state.goals.sleepHours !== 'number') state.goals.sleepHours = 8;
   if(typeof state.goals.rotMins !== 'number') state.goals.rotMins = 60;
   if(!Array.isArray(state.templates)) state.templates = [];
+  if(typeof state.bestStreak !== 'number') state.bestStreak = 0;
   if(typeof state.completedCounts !== 'object' || state.completedCounts === null) state.completedCounts = {};
 
   // Make sure every logs/meals value is actually an array, not corrupted data
@@ -735,7 +768,7 @@ function logQuestTime(id){
 
   const key = todayKey();
   if(!state.logs[key]) state.logs[key] = [];
-  state.logs[key].push({ title:q.title, project:q.project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString() });
+  state.logs[key].push({ title:q.title, project:q.project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString(), questId:q.id });
 
   q.totalMins = (q.totalMins||0) + mins;
   save(); render();
@@ -757,6 +790,11 @@ function onDragStart(e, id){
  *  updates status. It also keeps a persistent per-day completion count
  *  (completedCounts), since completed quests get purged from the board on
  *  rollover but a day's rarity still needs to know how many were finished. */
+/** Fired when a card is dropped on the "To do" or "Completed" column.
+ *  Moving into Completed logs a completion (feeds the rarity score via
+ *  completedCounts). Moving a completed quest back OUT to To do fully
+ *  reverses that: it un-logs every session tied to this quest and resets
+ *  its total time, putting it back to a genuinely untouched "to do" state. */
 function onDrop(e, targetStatus){
   e.preventDefault();
   document.querySelectorAll('.col').forEach(c => c.classList.remove('dragover'));
@@ -764,9 +802,16 @@ function onDrop(e, targetStatus){
   const q = state.quests.find(q=>q.id===id);
   if(!q) return;
 
-  if(q.status === 'completed' && targetStatus === 'todo' && q.completedAt){
-    const oldKey = logicalKeyForDate(new Date(q.completedAt));
-    if(state.completedCounts[oldKey]) state.completedCounts[oldKey] = Math.max(0, state.completedCounts[oldKey]-1);
+  if(q.status === 'completed' && targetStatus === 'todo'){
+    if(q.completedAt){
+      const oldKey = logicalKeyForDate(new Date(q.completedAt));
+      if(state.completedCounts[oldKey]) state.completedCounts[oldKey] = Math.max(0, state.completedCounts[oldKey]-1);
+    }
+    // Un-log every session tied to this quest, across every day it appears.
+    Object.keys(state.logs).forEach(dayKey=>{
+      state.logs[dayKey] = state.logs[dayKey].filter(l => l.questId !== id);
+    });
+    q.totalMins = 0;
   }
 
   q.status = targetStatus;
@@ -1205,16 +1250,18 @@ function rarityForScore(score){
 
 /**
  * Scores a day 0–8: +2 for hitting the sleep goal, +2 for staying under the
- * rotting limit, +1 per quest session logged (capped at 4). Hitting nothing
- * gives Common; hitting everything plus 4+ quests gives Legendary.
+ * rotting limit, +1 per quest *completed* that day (capped at 4, via
+ * completedCounts — see onDrop). Hitting nothing gives Common; hitting
+ * everything plus 4+ completed quests gives Legendary.
  */
 function dayScore(key){
   const stats = dayStats(key);
   const sleepMet = state.goals.sleepHours > 0 && stats.sleep >= state.goals.sleepHours;
   const rotMet = stats.rot <= state.goals.rotMins;
-  const questPoints = Math.min(stats.cleared, 4);
+  const questCount = state.completedCounts[key] || 0;
+  const questPoints = Math.min(questCount, 4);
   const score = (sleepMet?2:0) + (rotMet?2:0) + questPoints;
-  return { sleepMet, rotMet, questPoints, score };
+  return { sleepMet, rotMet, questCount, questPoints, score };
 }
 
 /** Renders a simple line-art sword icon (matches the eagle sigil's
@@ -1237,16 +1284,83 @@ function swordSVG(color, w, h){
  *  time as you log sleep/rotting/quests throughout the day. Also colors
  *  the page-border frame, so the rarity is visible at a glance, not just
  *  in a small badge. */
+// Tracks the previous render's tier/legendary state *within this session*
+// so we only celebrate genuine transitions, not every re-render.
+let lastRarityTierIndex = null;
+let wasLegendary = false;
+
+/** Consecutive days (today backward) scoring Rare (4+) or better. */
+function computeRarityStreak(){
+  let streak = 0;
+  let key = todayKey();
+  for(let i=0; i<3650; i++){
+    if(dayScore(key).score < 4) break;
+    streak++;
+    key = keyMinusDays(key, 1);
+  }
+  return streak;
+}
+
+/** Shows a brief checklist toast when today's rarity tier goes UP —
+ *  what got hit to earn it. */
+function showTierUpgradeToast(rarity, sleepMet, rotMet, questCount){
+  const el = document.getElementById('tierUpgradeToast');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;">${swordSVG(rarity.color,14,20)} Upgraded to <b style="color:${rarity.color}">${rarity.name}</b></div>
+    <div class="check-item ${sleepMet?'met':''}"><span class="check-mark">${sleepMet?'✓':'○'}</span> Sleep goal</div>
+    <div class="check-item ${rotMet?'met':''}"><span class="check-mark">${rotMet?'✓':'○'}</span> Rotting limit</div>
+    <div class="check-item ${questCount>0?'met':''}"><span class="check-mark">${questCount>0?'✓':'○'}</span> Quests completed (${questCount})</div>
+  `;
+  el.style.display = 'block';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=>{ el.style.display = 'none'; }, 5000);
+}
+
+/** Updates the header badge with today's live rarity, colors the
+ *  page-border frame, tracks the Rare+ streak, and fires the upgrade
+ *  toast / legendary pulse on genuine tier transitions. */
 function renderRarityBadge(){
   const key = todayKey();
-  const { score, sleepMet, rotMet } = dayScore(key);
+  const { score, sleepMet, rotMet, questCount } = dayScore(key);
   const rarity = rarityForScore(score);
+  const tierIndex = RARITY_TIERS.indexOf(rarity);
+
   const el = document.getElementById('rarityBadge');
   el.innerHTML = swordSVG(rarity.color, 13, 19) + `<span style="color:${rarity.color}">${rarity.name}</span>`;
-  el.title = `Today: ${score}/8 — sleep goal ${sleepMet?'met':'not met'}, rotting limit ${rotMet?'met':'not met'}`;
+  el.title = `Today: ${score}/8 — sleep goal ${sleepMet?'met':'not met'}, rotting limit ${rotMet?'met':'not met'}, ${questCount} quest${questCount===1?'':'s'} completed`;
 
-  document.getElementById('rarityFrame').style.boxShadow =
-    `inset 0 0 0 5px ${rarity.color}, inset 0 0 40px -20px ${rarity.color}`;
+  const frame = document.getElementById('rarityFrame');
+  frame.style.setProperty('--pulse-color', rarity.color);
+
+  const isLegendary = rarity.name === 'Legendary';
+  if(isLegendary && !wasLegendary){
+    frame.classList.add('legendary-pulse');
+    setTimeout(()=>frame.classList.remove('legendary-pulse'), 2500);
+  }
+  wasLegendary = isLegendary;
+
+  if(lastRarityTierIndex !== null && tierIndex > lastRarityTierIndex){
+    showTierUpgradeToast(rarity, sleepMet, rotMet, questCount);
+  }
+  lastRarityTierIndex = tierIndex;
+
+  const streak = computeRarityStreak();
+  if(streak > state.bestStreak){ state.bestStreak = streak; save(); }
+  const streakEl = document.getElementById('rarityStreak');
+  streakEl.textContent = streak > 0 ? `· ${streak}d Rare+ streak` : '';
+  streakEl.title = `Best streak: ${state.bestStreak} day${state.bestStreak===1?'':'s'}`;
+}
+
+/** Renders the "Last 30 days" rarity calendar — a colored square per day,
+ *  using the same data as the weekly table just extended further back. */
+function renderMonthGrid(){
+  const el = document.getElementById('monthGrid');
+  const days = lastNDays(30);
+  el.innerHTML = days.map(({key,date})=>{
+    const rarity = rarityForScore(dayScore(key).score);
+    const label = date.toLocaleDateString([], {month:'short', day:'numeric'});
+    return `<div class="month-cell" style="background:${rarity.color}" title="${label}: ${rarity.name}"></div>`;
+  }).join('');
 }
 
 function categoryBreakdownForWeek(){
@@ -1424,6 +1538,7 @@ function render(){
   renderCategoryChips();
   renderHistory();
   renderCategoryBreakdown();
+  renderMonthGrid();
   renderRarityBadge();
 
   const cols = {todo:[], completed:[]};
