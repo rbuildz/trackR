@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>trackR</title>
+<title>rbuilds / trackR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -149,6 +149,8 @@
   .clock-hournum{font-family:'DM Mono',monospace;font-size:9px;fill:var(--text-mute);}
   .clock-arc{cursor:pointer;opacity:0.92;transition:opacity 0.1s, filter 0.1s;}
   .clock-arc:hover{opacity:1;filter:brightness(1.25);}
+  .clock-arc-ics{cursor:pointer;fill:none;stroke:var(--text-mute);stroke-width:2;stroke-dasharray:3,3;opacity:0.8;transition:opacity 0.1s;}
+  .clock-arc-ics:hover{opacity:1;stroke:var(--text);}
   .clock-now{stroke:var(--gold);stroke-width:2;}
   .block-tooltip{
     position:fixed;pointer-events:none;background:var(--panel-2);border:1px solid var(--gold-dim);
@@ -356,6 +358,17 @@
   </section>
 
   <section class="block">
+    <h2 class="section-title" style="font-size:14px;">Calendar import (.ics)</h2>
+    <div id="icsStatus" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);margin-bottom:10px;"></div>
+    <div class="row" style="margin-top:0;">
+      <button onclick="document.getElementById('icsFile').click()">Import .ics file</button>
+      <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none" onchange="importICS(event)"/>
+      <label class="checklabel"><input type="checkbox" id="icsShowToggle" checked onchange="onICSToggle(this.checked)"/> show on clocks</label>
+      <button onclick="clearICS()">Clear imported events</button>
+    </div>
+  </section>
+
+  <section class="block">
     <div class="section-head">
       <h2 class="section-title" id="dayGoneTitle">Where today went</h2>
       <div class="stats">
@@ -481,7 +494,7 @@ function keyMinusDays(key, days){
   return keyFromDate(d);
 }
 
-let state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60 }, templates: [], completedCounts: {} };
+let state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60 }, templates: [], completedCounts: {}, icsEvents: [], icsShowOnClocks: true };
 let selectedDayKey = null;
 let editingQuestId = null;
 
@@ -502,6 +515,8 @@ function normalizeState(){
   if(typeof state.goals.rotMins !== 'number') state.goals.rotMins = 60;
   if(!Array.isArray(state.templates)) state.templates = [];
   if(typeof state.bestStreak !== 'number') state.bestStreak = 0;
+  if(!Array.isArray(state.icsEvents)) state.icsEvents = [];
+  if(typeof state.icsShowOnClocks !== 'boolean') state.icsShowOnClocks = true;
   if(typeof state.completedCounts !== 'object' || state.completedCounts === null) state.completedCounts = {};
 
   // Make sure every logs/meals value is actually an array, not corrupted data
@@ -981,7 +996,191 @@ function cardHTML(q){
 }
 
 // ---------------------------------------------------------------------------
+// 4b. CALENDAR IMPORT (.ics) — read-only reference events shown on the clocks
+// ---------------------------------------------------------------------------
+// Supports plain events and basic recurrence (DAILY/WEEKLY/MONTHLY/YEARLY
+// with INTERVAL, BYDAY, COUNT, UNTIL). Not a full RFC5545 implementation —
+// good enough for typical personal exports (classes, standing meetings).
+
+/** Parses one ICS date/time value: "20260715T090000Z" (UTC), "20260715T090000"
+ *  (treated as local time — TZID conversion is intentionally not attempted),
+ *  or "20260715" (all-day). Returns {date, allDay} or null if unparseable. */
+function parseICSDateTime(raw){
+  if(!raw) return null;
+  const m = raw.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?$/);
+  if(!m) return null;
+  const [, y, mo, d, h, mi, s, z] = m;
+  if(h === undefined) return { date: new Date(Number(y), Number(mo)-1, Number(d)), allDay:true };
+  if(z) return { date: new Date(Date.UTC(Number(y), Number(mo)-1, Number(d), Number(h), Number(mi), Number(s))), allDay:false };
+  return { date: new Date(Number(y), Number(mo)-1, Number(d), Number(h), Number(mi), Number(s)), allDay:false };
+}
+
+/** Parses an ICS file's text into raw {title, dtstart, dtend, rrule, uid} objects. */
+function parseICSFile(text){
+  const rawLines = text.split(/\r\n|\n|\r/);
+  const lines = [];
+  rawLines.forEach(line=>{
+    if(/^[ \t]/.test(line) && lines.length) lines[lines.length-1] += line.slice(1);
+    else lines.push(line);
+  });
+
+  const events = [];
+  let current = null;
+  lines.forEach(line=>{
+    if(line.startsWith('BEGIN:VEVENT')) current = {};
+    else if(line.startsWith('END:VEVENT')){ if(current) events.push(current); current = null; }
+    else if(current){
+      const idx = line.indexOf(':');
+      if(idx === -1) return;
+      const key = line.slice(0, idx).split(';')[0].toUpperCase();
+      const value = line.slice(idx+1);
+      if(key==='SUMMARY') current.title = value.replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\n/gi,' ');
+      else if(key==='DTSTART') current.dtstart = value;
+      else if(key==='DTEND') current.dtend = value;
+      else if(key==='RRULE') current.rrule = value;
+      else if(key==='UID') current.uid = value;
+    }
+  });
+  return events;
+}
+
+/** Converts raw parsed VEVENTs into the shape stored in state.icsEvents. */
+function normalizeICSEvents(rawEvents){
+  return rawEvents.map(ev=>{
+    const startInfo = parseICSDateTime(ev.dtstart);
+    if(!startInfo) return null;
+    const endInfo = ev.dtend ? parseICSDateTime(ev.dtend) : null;
+    const durationMs = endInfo ? Math.max(0, endInfo.date - startInfo.date) : 60*60*1000;
+    return {
+      uid: ev.uid || (ev.title||'')+ev.dtstart,
+      title: ev.title || '(untitled)',
+      start: startInfo.date.toISOString(),
+      allDay: startInfo.allDay,
+      durationMs,
+      rrule: ev.rrule || null
+    };
+  }).filter(Boolean);
+}
+
+function parseRRule(str){
+  const parts = {};
+  str.split(';').forEach(kv=>{
+    const [k,v] = kv.split('=');
+    if(k) parts[k] = v;
+  });
+  return parts;
+}
+
+const RRULE_DAY_CODES = ['SU','MO','TU','WE','TH','FR','SA'];
+
+/** Does this (possibly recurring) event occur on targetDate? Basic support
+ *  for DAILY/WEEKLY/MONTHLY/YEARLY with INTERVAL/BYDAY/UNTIL/COUNT. */
+function eventOccursOnDate(ev, targetDate){
+  const base = new Date(ev.start);
+  const baseDay = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  const targetDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+  if(targetDay < baseDay) return false;
+  if(!ev.rrule) return baseDay.getTime() === targetDay.getTime();
+
+  const rule = parseRRule(ev.rrule);
+  const interval = parseInt(rule.INTERVAL||'1') || 1;
+  if(rule.UNTIL){
+    const u = parseICSDateTime(rule.UNTIL);
+    if(u){
+      const untilDay = new Date(u.date.getFullYear(), u.date.getMonth(), u.date.getDate());
+      if(targetDay > untilDay) return false;
+    }
+  }
+  const dayDiff = Math.round((targetDay - baseDay)/86400000);
+
+  if(rule.FREQ === 'DAILY'){
+    if(dayDiff % interval !== 0) return false;
+    if(rule.COUNT && (dayDiff/interval) >= parseInt(rule.COUNT)) return false;
+    return true;
+  }
+  if(rule.FREQ === 'WEEKLY'){
+    const byday = rule.BYDAY ? rule.BYDAY.split(',') : [RRULE_DAY_CODES[base.getDay()]];
+    if(!byday.includes(RRULE_DAY_CODES[targetDate.getDay()])) return false;
+    const baseWeekStart = new Date(baseDay); baseWeekStart.setDate(baseWeekStart.getDate()-baseWeekStart.getDay());
+    const targetWeekStart = new Date(targetDay); targetWeekStart.setDate(targetWeekStart.getDate()-targetWeekStart.getDay());
+    const weeksBetween = Math.round((targetWeekStart-baseWeekStart)/(7*86400000));
+    return weeksBetween % interval === 0;
+  }
+  if(rule.FREQ === 'MONTHLY'){
+    if(targetDate.getDate() !== base.getDate()) return false;
+    const monthDiff = (targetDate.getFullYear()-base.getFullYear())*12 + (targetDate.getMonth()-base.getMonth());
+    if(monthDiff < 0 || monthDiff % interval !== 0) return false;
+    if(rule.COUNT && (monthDiff/interval) >= parseInt(rule.COUNT)) return false;
+    return true;
+  }
+  if(rule.FREQ === 'YEARLY'){
+    if(targetDate.getDate()!==base.getDate() || targetDate.getMonth()!==base.getMonth()) return false;
+    const yearDiff = targetDate.getFullYear()-base.getFullYear();
+    if(yearDiff < 0 || yearDiff % interval !== 0) return false;
+    if(rule.COUNT && (yearDiff/interval) >= parseInt(rule.COUNT)) return false;
+    return true;
+  }
+  return false;
+}
+
+/** Returns imported calendar events (in the same {title,project,start,end,ts}
+ *  shape as logged sessions) that occur on the given day key. All-day events
+ *  are skipped since they have no meaningful position on a 24-hour clock. */
+function calendarEventsForDay(dayKey){
+  const targetDate = new Date(dayKey+'T00:00:00');
+  const results = [];
+  (state.icsEvents||[]).forEach(ev=>{
+    if(ev.allDay) return;
+    if(!eventOccursOnDate(ev, targetDate)) return;
+    const base = new Date(ev.start);
+    const occStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), base.getHours(), base.getMinutes(), base.getSeconds());
+    const occEnd = new Date(occStart.getTime() + ev.durationMs);
+    results.push({ title: ev.title, project: 'Calendar', start: occStart.toISOString(), end: occEnd.toISOString(), ts: occStart.toISOString(), actualMins: Math.round(ev.durationMs/60000) });
+  });
+  return results;
+}
+
+/** Handles the .ics file input — parses and merges events into state
+ *  (de-duped by UID, so re-importing an updated file just refreshes them). */
+function importICS(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const raw = parseICSFile(reader.result);
+      const normalized = normalizeICSEvents(raw);
+      const existingByUid = {};
+      (state.icsEvents||[]).forEach(ev=>{ existingByUid[ev.uid] = ev; });
+      normalized.forEach(ev=>{ existingByUid[ev.uid] = ev; });
+      state.icsEvents = Object.values(existingByUid);
+      document.getElementById('icsStatus').textContent = `Imported ${normalized.length} event${normalized.length===1?'':'s'} (${state.icsEvents.length} total stored).`;
+      save(); render();
+    }catch(err){
+      console.error('ICS import failed', err);
+      document.getElementById('icsStatus').textContent = "Couldn't read that file — make sure it's a valid .ics calendar export.";
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function clearICS(){
+  state.icsEvents = [];
+  document.getElementById('icsStatus').textContent = 'Imported events cleared.';
+  save(); render();
+}
+
+function onICSToggle(checked){
+  state.icsShowOnClocks = checked;
+  save(); render();
+}
+
+// ---------------------------------------------------------------------------
 // 5. CLOCK VISUALIZATION ("Where ___ went")
+// ---------------------------------------------------------------------------
+
+
 // ---------------------------------------------------------------------------
 // Two standard 12-hour analog faces (12am–12pm, 12pm–12am). Every logged
 // session (quest, sleep, rotting) draws as a colored ring segment; segments
@@ -1082,10 +1281,13 @@ function hideTooltip(){
 }
 
 // Draws two standard 12-hour analog clock faces (12am–12pm and 12pm–12am),
-// numbered 12 at top like a normal clock, with an arc segment
-// for every logged interval, split at the halfway seam and at midnight-wrap
-// as needed. Hovering a segment shows name/start/end via showTooltip.
-function renderClocks(log, isToday){
+// numbered 12 at top like a normal clock, with an arc segment for every
+// logged interval, split at the halfway seam and at midnight-wrap as needed.
+// Overlapping sessions (e.g. "hw" logged inside a longer "laundry" block)
+// nest into concentric inner rings instead of colliding — see assignDepths().
+// icsEvents (optional) are events imported from a .ics file — drawn as a
+// thin dashed outer ring so they read as "reference/external", not tracked time.
+function renderClocks(log, isToday, icsEvents){
   const svgA = document.getElementById('clockA');
   const svgB = document.getElementById('clockB');
   const hourLabels = [12,1,2,3,4,5,6,7,8,9,10,11];
@@ -1101,35 +1303,75 @@ function renderClocks(log, isToday){
     return [{start:startM, end:endM}];
   }
 
-  log.forEach(entry=>{
-    const startDate = entry.start ? new Date(entry.start) : new Date(entry.ts);
-    const endDate = entry.end ? new Date(entry.end) : startDate;
-    const startM = minutesFromDayStart(startDate);
-    const endM = minutesFromDayStart(endDate);
-    const color = colorFor(entry.project);
-
-    daySegments(startM, endM).forEach(seg=>{
-      const pieces = [];
-      if(seg.start < 720) pieces.push({ half:0, start: seg.start, end: Math.min(seg.end,720) });
-      if(seg.end > 720) pieces.push({ half:1, start: Math.max(seg.start,720), end: seg.end });
-
-      pieces.forEach(p=>{
-        if(p.end <= p.start) return;
-        const halfOffset = p.half===0 ? 0 : 720;
-        const angleStart = ((p.start-halfOffset)/720)*360;
-        const angleEnd = ((p.end-halfOffset)/720)*360;
-        const svg = p.half===0 ? svgA : svgB;
-        const path = document.createElementNS(SVG_NS,'path');
-        path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,CLOCK_R_OUTER,CLOCK_R_INNER,angleStart,angleEnd));
-        path.setAttribute('fill', color);
-        path.setAttribute('class','clock-arc');
-        path.addEventListener('mousemove', e=>showTooltip(e, entry));
-        path.addEventListener('mouseenter', e=>showTooltip(e, entry));
-        path.addEventListener('mouseleave', hideTooltip);
-        svg.appendChild(path);
+  /** Splits every entry into per-half {start,end} pieces (0–720 minutes
+   *  local to that half), tagged with which half (0=AM, 1=PM) they land on. */
+  function buildPieces(entries){
+    const pieces = [];
+    entries.forEach(entry=>{
+      const startDate = entry.start ? new Date(entry.start) : new Date(entry.ts);
+      const endDate = entry.end ? new Date(entry.end) : startDate;
+      const startM = minutesFromDayStart(startDate);
+      const endM = minutesFromDayStart(endDate);
+      daySegments(startM, endM).forEach(seg=>{
+        if(seg.start < 720) pieces.push({ entry, half:0, start: seg.start, end: Math.min(seg.end,720) });
+        if(seg.end > 720) pieces.push({ entry, half:1, start: Math.max(seg.start,720)-720, end: seg.end-720 });
       });
     });
-  });
+    return pieces.filter(p => p.end > p.start);
+  }
+
+  /** Greedily assigns a nesting depth to each piece so overlapping pieces
+   *  (within the same clock half) land on different concentric rings.
+   *  Processes longest-duration pieces first, so a long background task
+   *  (laundry) claims the outer ring and a short task logged inside it
+   *  (hw) nests inward automatically. Returns the max depth per half. */
+  function assignDepths(pieces){
+    const sorted = [...pieces].sort((a,b)=>(b.end-b.start)-(a.end-a.start));
+    const placed = [];
+    sorted.forEach(p=>{
+      let depth = 0;
+      while(placed.some(o => o.half===p.half && o.depth===depth && o.start < p.end && p.start < o.end)) depth++;
+      p.depth = depth;
+      placed.push(p);
+    });
+    const maxDepthByHalf = [0,0];
+    placed.forEach(p=>{ maxDepthByHalf[p.half] = Math.max(maxDepthByHalf[p.half], p.depth); });
+    return maxDepthByHalf;
+  }
+
+  function drawPieces(pieces, maxDepthByHalf, isIcsSet){
+    pieces.forEach(p=>{
+      const halfOffset = 0; // p.start/p.end are already local to their half
+      const angleStart = ((p.start-halfOffset)/720)*360;
+      const angleEnd = ((p.end-halfOffset)/720)*360;
+      const svg = p.half===0 ? svgA : svgB;
+      const path = document.createElementNS(SVG_NS,'path');
+      if(isIcsSet){
+        path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,108,104,angleStart,angleEnd));
+        path.setAttribute('class','clock-arc-ics');
+      } else {
+        const maxDepth = maxDepthByHalf[p.half];
+        const thickness = (CLOCK_R_OUTER-CLOCK_R_INNER)/(maxDepth+1);
+        const outer = CLOCK_R_OUTER - p.depth*thickness;
+        const inner = outer - thickness;
+        path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,outer,inner,angleStart,angleEnd));
+        path.setAttribute('fill', colorFor(p.entry.project));
+        path.setAttribute('class','clock-arc');
+      }
+      path.addEventListener('mousemove', e=>showTooltip(e, p.entry));
+      path.addEventListener('mouseenter', e=>showTooltip(e, p.entry));
+      path.addEventListener('mouseleave', hideTooltip);
+      svg.appendChild(path);
+    });
+  }
+
+  const logPieces = buildPieces(log);
+  const maxDepthByHalf = assignDepths(logPieces);
+  drawPieces(logPieces, maxDepthByHalf, false);
+
+  if(icsEvents && icsEvents.length){
+    drawPieces(buildPieces(icsEvents), [0,0], true);
+  }
 
   if(isToday){
     const nowM = minutesFromDayStart(new Date());
@@ -1579,7 +1821,9 @@ function render(){
   document.getElementById('statRot').textContent = s.rot;
 
   // Render the dual clock-face visualization for the selected day
-  renderClocks(s.log, selectedDayKey === todayK);
+  const icsEventsForDay = state.icsShowOnClocks ? calendarEventsForDay(selectedDayKey) : [];
+  renderClocks(s.log, selectedDayKey === todayK, icsEventsForDay);
+  document.getElementById('icsShowToggle').checked = state.icsShowOnClocks;
 
   const rows = document.getElementById('logrows');
   if(s.log.length===0){
