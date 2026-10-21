@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rbuilds / trackR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -41,9 +42,8 @@
   .wrap{max-width:960px;margin:0 auto;}
   /* ---- Header (logo, title, live date/time) ---- */
   .header{
-    display:flex;justify-content:space-between;align-items:flex-end;
-    border-bottom:1px solid var(--border);
-    padding-bottom:16px;margin-bottom:28px;
+    display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;
+    padding-bottom:16px;
   }
   .brand{display:flex;align-items:center;gap:10px;}
   .brand svg{width:26px;height:26px;}
@@ -55,36 +55,73 @@
     font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;
     margin:2px 0 0;color:var(--text);
   }
+  h1 .past-tag{
+    font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--gold);border:1px solid var(--gold-dim);border-radius:2px;padding:2px 6px;
+    vertical-align:middle;margin-left:8px;
+  }
   h2.section-title{
     font-family:'DM Serif Display',serif;font-size:18px;font-weight:400;
     margin:0 0 14px;color:var(--text);
   }
   .date{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-mute);text-align:right;}
+  .hint{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);letter-spacing:0.5px;}
+
+  /* ---- Day navigator (sticky; picks which day you're viewing/logging to) ---- */
+  .daybar{
+    position:sticky;top:0;z-index:50;background:var(--bg);
+    display:flex;align-items:center;gap:6px;
+    padding:10px 0;margin-bottom:28px;border-bottom:1px solid var(--border);
+  }
+  .daybar.past{border-bottom-color:var(--gold-dim);}
+  .daybar .navbtn{padding:10px 10px;flex-shrink:0;}
+  .daypills{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;}
+  .daypills::-webkit-scrollbar{display:none;}
+  .daypill{
+    flex:1;min-width:42px;display:flex;flex-direction:column;align-items:center;gap:1px;
+    padding:5px 4px 4px;background:var(--panel);border:1px solid var(--border);
+    border-bottom:2px solid var(--pill-rarity,var(--border));
+    font-size:9px;letter-spacing:1px;color:var(--text-mute);
+  }
+  .daypill .dnum{font-family:'DM Serif Display',serif;font-size:16px;letter-spacing:0;color:var(--text);text-transform:none;}
+  .daypill.active{border-color:var(--gold);border-bottom-color:var(--pill-rarity,var(--gold));background:var(--panel-2);color:var(--gold);}
+  .daypill:hover{border-bottom-color:var(--pill-rarity,var(--gold));}
+  #backToToday{flex-shrink:0;}
+
   /* ---- Form controls + buttons (shared across every widget) ---- */
   .addbar{
-    display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap;
+    display:flex;gap:8px;flex-wrap:wrap;align-items:center;
   }
   .addbar input[type=text]{flex:1;min-width:180px;}
+  .addbar-hint{margin:8px 0 22px;}
   input[type=text], select, input[type=number], input[type=time]{
     background:var(--panel);border:1px solid var(--border);color:var(--text);
     font-family:'Outfit',sans-serif;font-size:14px;padding:10px 12px;border-radius:2px;
     outline:none;
   }
   input[type=text]:focus, select:focus, input[type=number]:focus, input[type=time]:focus{border-color:var(--gold-dim);}
+  input[type=time]{color-scheme:dark;}
   select{color:var(--text-mute);}
   input[type=color]{
     width:38px;height:38px;padding:2px;background:var(--panel);border:1px solid var(--border);
     border-radius:2px;cursor:pointer;
   }
+  .invalid{border-color:var(--red) !important;animation:shake 0.3s;}
+  @keyframes shake{25%{transform:translateX(-3px);}75%{transform:translateX(3px);}}
   button{
     background:transparent;border:1px solid var(--border-strong);color:var(--text);
     font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1px;text-transform:uppercase;
     padding:10px 16px;border-radius:2px;cursor:pointer;
   }
   button:hover{border-color:var(--gold);color:var(--gold);}
+  button:disabled{opacity:0.3;cursor:default;}
+  button:disabled:hover{border-color:var(--border-strong);color:var(--text);}
   button.primary{border-color:var(--gold-dim);color:var(--gold);}
   button.primary:hover{background:var(--gold);color:var(--bg);}
   button.small{padding:4px 8px;font-size:10px;}
+  .xbtn{border:none;background:none;padding:0 4px;font-size:14px;line-height:1;color:var(--text-mute);letter-spacing:0;}
+  .xbtn:hover{color:var(--red);}
+  .arrow{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);}
   .checklabel{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);padding:0 6px;}
   .checklabel input{accent-color:var(--gold);}
   /* ---- Quest board: To do / Completed columns + draggable cards ---- */
@@ -99,29 +136,36 @@
     font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;
     color:var(--text-mute);margin-bottom:12px;display:flex;justify-content:space-between;
   }
+  .col-title .col-day{color:var(--gold);letter-spacing:1px;}
   .card{
     background:var(--panel-2);border:1px solid var(--border);border-left:2px solid var(--tag-color,var(--gold-dim));
     border-radius:2px;padding:10px 12px;margin-bottom:8px;
   }
+  .card.timing{border-color:var(--gold-dim);border-left-color:var(--tag-color,var(--gold-dim));}
   .card-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
   .card-title{font-size:14px;line-height:1.4;}
   .card-title.done{color:var(--text-mute);text-decoration:line-through;}
   .card-meta{
     font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);
-    margin-top:6px;display:flex;justify-content:space-between;align-items:center;
+    margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:6px;
   }
   .tag{font-size:10px;letter-spacing:0.5px;}
-  .card-actions{display:flex;gap:6px;margin-top:8px;}
+  .card-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
   .card-actions button{padding:4px 8px;font-size:10px;}
   .empty{color:var(--text-mute);font-size:12px;font-style:italic;}
   .recur-tag{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-mute);cursor:pointer;border:1px solid var(--border);border-radius:2px;padding:1px 5px;}
   .recur-tag:hover{color:var(--red);border-color:var(--red);}
 
+  /* ---- Live timers (quests + rotting) ---- */
+  .timer-run{display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:13px;color:var(--gold);}
+  .timer-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:blink 1.2s ease-in-out infinite;flex-shrink:0;}
+  @keyframes blink{50%{opacity:0.25;}}
+
   /* ---- Section layout + stat bars (shared by every section below) ---- */
   section.block{
     border-top:1px solid var(--border);padding-top:22px;margin-bottom:32px;
   }
-  .section-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+  .section-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
   .stats{display:flex;gap:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);flex-wrap:wrap;}
   .stats b{color:var(--gold);font-weight:500;}
 
@@ -140,7 +184,7 @@
   .clockrow{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;}
   .clockcard{display:flex;flex-direction:column;align-items:center;gap:8px;}
   .clocklabel{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;color:var(--text-mute);text-transform:uppercase;}
-  .clockrow svg{width:200px;height:200px;}
+  .clockrow svg{width:220px;height:220px;max-width:100%;}
   .clock-face{fill:var(--panel);stroke:var(--border);stroke-width:1;}
   .clock-hole{fill:var(--bg);}
   .clock-center-big{font-family:'DM Serif Display',serif;font-size:13px;fill:var(--text);}
@@ -149,8 +193,10 @@
   .clock-hournum{font-family:'DM Mono',monospace;font-size:9px;fill:var(--text-mute);}
   .clock-arc{cursor:pointer;opacity:0.92;transition:opacity 0.1s, filter 0.1s;}
   .clock-arc:hover{opacity:1;filter:brightness(1.25);}
-  .clock-arc-ics{cursor:pointer;fill:none;stroke:var(--text-mute);stroke-width:2;stroke-dasharray:3,3;opacity:0.8;transition:opacity 0.1s;}
-  .clock-arc-ics:hover{opacity:1;stroke:var(--text);}
+  .clock-arc-ics{pointer-events:none;fill:none;stroke:var(--text-mute);stroke-width:2;stroke-dasharray:3,3;opacity:0.8;transition:opacity 0.1s;}
+  .clock-arc-ics.hover{opacity:1;stroke:var(--text);stroke-width:3;}
+  .clock-arc-ics.attended{stroke-dasharray:none;stroke-width:3;opacity:1;}
+  .clock-ics-hit{fill:transparent;cursor:pointer;}
   .clock-now{stroke:var(--gold);stroke-width:2;}
   .block-tooltip{
     position:fixed;pointer-events:none;background:var(--panel-2);border:1px solid var(--gold-dim);
@@ -159,13 +205,32 @@
   }
   .block-tooltip .tt-title{color:var(--gold);font-weight:500;margin-bottom:3px;font-family:'Outfit',sans-serif;font-size:12px;}
   .block-tooltip .tt-time{color:var(--text-mute);}
+  .block-tooltip .tt-hint{color:var(--gold);margin-top:4px;font-size:10px;}
+
+  /* ---- Calendar events for the selected day (click to mark attended) ---- */
+  .sublabel{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-mute);margin:6px 0 8px;}
+  .ics-list{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;}
+  .ics-item{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;
+    background:var(--panel);border:1px dashed var(--border-strong);padding:8px 12px;
+    font-family:'Outfit',sans-serif;font-size:13px;letter-spacing:0;text-transform:none;color:var(--text);
+  }
+  .ics-item .ics-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);white-space:nowrap;}
+  .ics-item .ics-state{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-mute);white-space:nowrap;}
+  .ics-item:hover{color:var(--text);border-color:var(--gold-dim);}
+  .ics-item:hover .ics-state{color:var(--gold);}
+  .ics-item.attended{border-style:solid;border-left:3px solid var(--tag-color,var(--gold));}
+  .ics-item.attended .ics-state{color:var(--gold);}
+
   /* ---- Plain-text log rows below the clocks ---- */
   .logrow{
-    display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:12px;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:12px;
     padding:6px 0;border-bottom:1px solid var(--border);color:var(--text-mute);
   }
   .logrow .lname{color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;}
+  .logrow .lright{display:flex;align-items:center;gap:10px;white-space:nowrap;}
   .logrow .ltime{color:var(--gold);}
+  .logrow .ldur{width:44px;text-align:right;}
 
   /* ---- Sleep + Rotting widget cards ---- */
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
@@ -177,9 +242,20 @@
   .bignum{font-family:'DM Serif Display',serif;font-size:32px;color:var(--gold);line-height:1;}
   .bignum .unit{font-family:'DM Mono',monospace;font-size:13px;color:var(--text-mute);margin-left:6px;}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;}
-  .quickbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
-  .goalrow{display:flex;align-items:center;gap:6px;margin-top:10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);letter-spacing:0.5px;text-transform:uppercase;}
+  .quickbtns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+  .goalrow{display:flex;align-items:center;gap:6px;margin-top:12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);letter-spacing:0.5px;text-transform:uppercase;}
   .goalrow input{padding:5px 6px;font-size:11px;}
+  .meter{height:6px;background:var(--panel-2);border-radius:2px;overflow:hidden;margin-top:12px;}
+  .meter-fill{height:100%;background:var(--gold-dim);border-radius:2px;transition:width 0.25s;}
+  .meter-fill.met{background:var(--green);}
+  .meter-fill.over{background:var(--red);}
+  .meter-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-top:5px;}
+  .session-list{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
+  .session{
+    display:flex;justify-content:space-between;align-items:center;font-family:'DM Mono',monospace;font-size:11px;
+    color:var(--text-mute);padding:4px 4px 4px 8px;background:var(--panel-2);border:1px solid var(--border);border-radius:2px;
+  }
+  .session b{color:var(--text);font-weight:400;}
 
   /* ---- Category time-by-week bar list ---- */
   .catbar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:'DM Mono',monospace;font-size:11px;}
@@ -193,7 +269,7 @@
     display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
     background:var(--panel-2);border:1px solid var(--gold-dim);border-radius:3px;
     padding:10px 14px;align-items:center;gap:14px;font-family:'Outfit',sans-serif;font-size:13px;
-    box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:2000;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:2000;max-width:calc(100vw - 32px);
   }
   .undo-toast button{border-color:var(--gold-dim);color:var(--gold);padding:6px 12px;}
 
@@ -246,7 +322,8 @@
   .tier-toast .check-mark{width:12px;text-align:center;flex-shrink:0;}
 
   /* ---- Responsive: narrow screens drop secondary columns ---- */
-  @media(max-width:640px){.board{grid-template-columns:1fr;} .grid2{grid-template-columns:1fr;} .weekrow,.weekhead{grid-template-columns:50px 1fr 1fr 30px;font-size:9px;}
+  @media(max-width:640px){#qb{padding:20px 16px 64px;} .board{grid-template-columns:1fr;} .grid2{grid-template-columns:1fr;} .weekrow,.weekhead{grid-template-columns:50px 1fr 1fr 30px;font-size:9px;}
+    .date{text-align:left;}
     .weekrow span:nth-child(3), .weekrow span:nth-child(5), .weekrow span:nth-child(6), .weekrow span:nth-child(7), .weekrow span:nth-child(8), .weekrow span:nth-child(9),
     .weekhead span:nth-child(3), .weekhead span:nth-child(5), .weekhead span:nth-child(6), .weekhead span:nth-child(7), .weekhead span:nth-child(8), .weekhead span:nth-child(9){display:none;}}
 </style>
@@ -264,31 +341,31 @@
       </svg>
       <div>
         <div class="word">rbuilds / trackR</div>
-        <h1>Today's quests</h1>
+        <h1 id="pageTitle">Today's quests</h1>
       </div>
     </div>
     <div class="date"><span id="dateDisplay"></span> · <span id="timeDisplay"></span> · <span id="rarityBadge" class="rarity-badge"></span> <span id="rarityStreak" class="rarity-streak"></span></div>
   </div>
 
-  <section class="block" style="border-top:none;padding-top:0;">
-    <div class="section-head">
-      <h2 class="section-title">Categories</h2>
-    </div>
-    <div class="categories" id="categoryChips"></div>
-    <div class="catform">
-      <input type="text" id="newCatName" placeholder="New category name" style="width:180px;"/>
-      <input type="color" id="newCatColor" value="#c9a961"/>
-      <button onclick="addCategory()">Add category</button>
-    </div>
-  </section>
+  <!-- Day navigator: everything below logs to the day picked here -->
+  <div class="daybar" id="daybar">
+    <button class="navbtn" id="prevDayBtn" onclick="shiftDay(-1)" title="Previous day (←)" aria-label="Previous day">‹</button>
+    <div class="daypills" id="dayPills"></div>
+    <button class="navbtn" id="nextDayBtn" onclick="shiftDay(1)" title="Next day (→)" aria-label="Next day">›</button>
+    <button class="primary" id="backToToday" onclick="selectDay(todayKey())">Today</button>
+  </div>
 
   <section class="block" style="border-top:none;padding-top:0;">
     <div class="addbar">
       <input type="text" id="newTitle" placeholder="What needs doing?" />
       <select id="newProject"></select>
+      <input type="time" id="newStart" style="width:118px;" oninput="autoAdvanceTime(event,'newEnd'); updateAddButton()" onkeydown="handleTimeBackspace(event)" title="Optional — fill both to log it as already done"/>
+      <span class="arrow">→</span>
+      <input type="time" id="newEnd" style="width:118px;" oninput="updateAddButton()" onkeydown="endFieldKeydown(event,'newStart',addQuest)" title="Optional — leave empty to end now (today only)"/>
       <label class="checklabel"><input type="checkbox" id="newRecurring"/> repeat daily</label>
-      <button class="primary" onclick="addQuest()">Add quest</button>
+      <button class="primary" id="addQuestBtn" onclick="addQuest()">Add quest</button>
     </div>
+    <div class="hint addbar-hint" id="addHint"></div>
 
     <div class="board">
       <div class="col" id="col-todo-wrap" ondragover="event.preventDefault(); this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDrop(event,'todo')">
@@ -296,7 +373,7 @@
         <div id="col-todo"></div>
       </div>
       <div class="col" id="col-completed-wrap" ondragover="event.preventDefault(); this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDrop(event,'completed')">
-        <div class="col-title">Completed <span id="cnt-completed">0</span></div>
+        <div class="col-title"><span>Completed <span class="col-day" id="completedDayLabel"></span></span> <span id="cnt-completed">0</span></div>
         <div id="col-completed"></div>
       </div>
     </div>
@@ -305,32 +382,44 @@
   <section class="block">
     <div class="grid2">
       <div class="widgetcard">
-        <div class="wtitle">Sleep last night</div>
+        <div class="wtitle" id="sleepTitle">Sleep last night</div>
         <div class="bignum" id="sleepDisplay">0<span class="unit">hrs</span></div>
-        <div id="sleepRangeText" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-top:4px;"></div>
+        <div id="sleepRangeText" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-top:4px;min-height:12px;"></div>
+        <div class="meter"><div class="meter-fill" id="sleepMeter"></div></div>
+        <div class="meter-label" id="sleepMeterLabel"></div>
         <div class="row">
-          <input type="time" id="bedInput" style="width:120px;" oninput="autoAdvanceTime(event,'wakeInput')" onkeydown="handleTimeBackspace(event)"/>
-          <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);">→</span>
-          <input type="time" id="wakeInput" style="width:120px;" onkeydown="endFieldKeydown(event,'bedInput',logSleep)"/>
+          <input type="time" id="bedInput" style="width:120px;" oninput="autoAdvanceTime(event,'wakeInput')" onkeydown="handleTimeBackspace(event)" title="Bedtime"/>
+          <span class="arrow">→</span>
+          <input type="time" id="wakeInput" style="width:120px;" onkeydown="endFieldKeydown(event,'bedInput',logSleep)" title="Wake time — leave empty for now (today only)"/>
           <button onclick="logSleep()">Log sleep</button>
         </div>
         <div class="goalrow">
-          <label>Goal</label>
+          <label for="sleepGoalInput">Goal</label>
           <input type="number" id="sleepGoalInput" min="0" max="24" step="0.5" style="width:56px;" onchange="setSleepGoal(this.value)"/>
           <span>hrs</span>
         </div>
       </div>
       <div class="widgetcard">
-        <div class="wtitle">Time spent rotting</div>
+        <div class="wtitle" id="rotTitle">Time spent rotting</div>
         <div class="bignum" id="rotDisplay">0<span class="unit">min</span></div>
+        <div class="meter"><div class="meter-fill" id="rotMeter"></div></div>
+        <div class="meter-label" id="rotMeterLabel"></div>
+        <div class="row" id="rotTimerRow"></div>
         <div class="row">
-          <input type="time" id="rotManualStart" style="width:120px;" oninput="autoAdvanceTime(event,'rotManualEnd')" onkeydown="handleTimeBackspace(event)"/>
-          <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);">→</span>
-          <input type="time" id="rotManualEnd" style="width:120px;" onkeydown="endFieldKeydown(event,'rotManualStart',logRotManual)"/>
+          <input type="time" id="rotManualStart" style="width:120px;" oninput="autoAdvanceTime(event,'rotManualEnd')" onkeydown="handleTimeBackspace(event)" title="Start time"/>
+          <span class="arrow">→</span>
+          <input type="time" id="rotManualEnd" style="width:120px;" onkeydown="endFieldKeydown(event,'rotManualStart',logRotManual)" title="End time — leave empty for now (today only)"/>
           <button onclick="logRotManual()">Log rot</button>
         </div>
+        <div class="quickbtns">
+          <span class="hint" id="rotQuickHint">quick add</span>
+          <button class="small" onclick="quickRot(15)">+15m</button>
+          <button class="small" onclick="quickRot(30)">+30m</button>
+          <button class="small" onclick="quickRot(60)">+1h</button>
+        </div>
+        <div class="session-list" id="rotSessions"></div>
         <div class="goalrow">
-          <label>Limit</label>
+          <label for="rotGoalInput">Limit</label>
           <input type="number" id="rotGoalInput" min="0" style="width:56px;" onchange="setRotGoal(this.value)"/>
           <span>min</span>
         </div>
@@ -340,37 +429,7 @@
 
   <section class="block">
     <div class="section-head">
-      <h2 class="section-title">This week</h2>
-      <div class="row" style="margin-top:0;">
-        <button onclick="exportLog()">Export log (.txt)</button>
-        <button onclick="exportJSON()">Backup (.json)</button>
-        <button onclick="document.getElementById('importFile').click()">Restore backup</button>
-        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)"/>
-      </div>
-    </div>
-    <div id="weekRarityAvg" class="rarity-week-avg"></div>
-    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-bottom:10px;">Click a day to see its breakdown below</div>
-    <div id="weekHistory"></div>
-    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Last 30 days</h2>
-    <div id="monthGrid" class="month-grid"></div>
-    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Time by category (7 days)</h2>
-    <div id="categoryBreakdown"></div>
-  </section>
-
-  <section class="block">
-    <h2 class="section-title" style="font-size:14px;">Calendar import (.ics)</h2>
-    <div id="icsStatus" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);margin-bottom:10px;"></div>
-    <div class="row" style="margin-top:0;">
-      <button onclick="document.getElementById('icsFile').click()">Import .ics file</button>
-      <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none" onchange="importICS(event)"/>
-      <label class="checklabel"><input type="checkbox" id="icsShowToggle" checked onchange="onICSToggle(this.checked)"/> show on clocks</label>
-      <button onclick="clearICS()">Clear imported events</button>
-    </div>
-  </section>
-
-  <section class="block">
-    <div class="section-head">
-      <h2 class="section-title" id="dayGoneTitle">Where today went</h2>
+      <h2 class="section-title" id="dayGoneTitle" style="margin:0;">Where today went</h2>
       <div class="stats">
         <span><b id="statCleared">0</b> sessions logged</span>
         <span><b id="statMins">0</b>m logged</span>
@@ -389,9 +448,53 @@
       </div>
     </div>
     <div id="blockTooltip" class="block-tooltip"></div>
+    <div id="icsDayList"></div>
+    <div class="sublabel">Timeline</div>
     <div id="logrows"></div>
     <div style="margin-top:14px;">
-      <button onclick="clearSelectedDay()" id="resetDayBtn">Reset this day's log</button>
+      <button class="small" onclick="clearSelectedDay()" id="resetDayBtn">Reset this day</button>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-head">
+      <h2 class="section-title" style="margin:0;">This week</h2>
+      <div class="row" style="margin-top:0;">
+        <button onclick="exportLog()">Export log (.txt)</button>
+        <button onclick="exportJSON()">Backup (.json)</button>
+        <button onclick="document.getElementById('importFile').click()">Restore backup</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)"/>
+      </div>
+    </div>
+    <div id="weekRarityAvg" class="rarity-week-avg"></div>
+    <div class="hint" style="margin-bottom:10px;">Click a day to view it or log to it (or use ← → keys)</div>
+    <div id="weekHistory"></div>
+    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Last 30 days</h2>
+    <div id="monthGrid" class="month-grid"></div>
+    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Time by category (7 days)</h2>
+    <div id="categoryBreakdown"></div>
+  </section>
+
+  <section class="block">
+    <h2 class="section-title" style="font-size:14px;">Calendar import (.ics)</h2>
+    <div id="icsStatus" class="hint" style="font-size:11px;margin-bottom:10px;"></div>
+    <div class="row" style="margin-top:0;">
+      <button onclick="document.getElementById('icsFile').click()">Import .ics file</button>
+      <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none" onchange="importICS(event)"/>
+      <label class="checklabel"><input type="checkbox" id="icsShowToggle" checked onchange="onICSToggle(this.checked)"/> show on clocks</label>
+      <label class="checklabel" for="icsCategory">log attended as</label>
+      <select id="icsCategory" onchange="setICSCategory(this.value)"></select>
+      <button onclick="clearICS()">Clear imported events</button>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2 class="section-title" style="font-size:14px;">Categories</h2>
+    <div class="categories" id="categoryChips"></div>
+    <div class="catform">
+      <input type="text" id="newCatName" placeholder="New category name" style="width:180px;"/>
+      <input type="color" id="newCatColor" value="#c9a961"/>
+      <button onclick="addCategory()">Add category</button>
     </div>
   </section>
 
@@ -400,7 +503,7 @@
 
 <div id="undoToast" class="undo-toast">
   <span id="undoMsg"></span>
-  <button onclick="performUndo()">Undo</button>
+  <button id="undoBtn" onclick="performUndo()">Undo</button>
 </div>
 
 <script>
@@ -410,23 +513,29 @@
  *
  * Data model (see `state` below):
  *   projects   – categories (name + color), e.g. OrbitArm, Sleep, Rotting
- *   quests     – {id, title, project, status: 'todo'|'completed', totalMins, completedAt, templateId}
- *   logs[day]  – array of logged sessions for that day: {title, project, actualMins, start, end, ts}
+ *   quests     – {id, title, project, status: 'todo'|'completed', totalMins, completedAt, completedDay, templateId, icsKey}
+ *   logs[day]  – array of logged sessions for that day: {id, title, project, actualMins, start, end, ts, questId, icsKey}
  *   sleep[day] – {bed, wake, hours} for that day's sleep entry
  *   rotting[day] – total rotting minutes logged that day
  *   goals      – {sleepHours, rotMins} target values used to color the widgets
  *   templates  – recurring quest definitions {id, title, project}; a fresh
  *                "to do" instance is (re-)created from each template whenever
  *                none is currently outstanding — see ensureRecurringQuests()
+ *   timer      – the one running live timer, {kind:'rot'|'quest', questId, start} or null
+ *   icsCategory – category used when an imported calendar event is marked attended
  *
  * The "day" a session belongs to is a *logical* day that rolls over at 5am,
  * not midnight — see todayKey()/logicalNow() below. This means working past
  * midnight still counts as "today" until 5am.
  *
+ * selectedDayKey is the day being viewed AND logged to. It can be any of the
+ * last 7 days (picked in the sticky day bar or the "This week" table), so a
+ * forgotten session can be back-filled into the right day.
+ *
  * Sections in this file:
  *   1. Data model + persistence (state, load/save, normalizeState, rollover)
- *   2. Categories (projects)
- *   3. Quests (To do / Completed board, editing, recurring templates)
+ *   2. Categories (projects) + undo/toast + day navigation
+ *   3. Quests (To do / Completed board, editing, recurring templates, timers)
  *   4. Sleep + Rotting widgets (with goals/targets)
  *   5. Clock visualization ("Where ___ went")
  *   6. Weekly history + category breakdown + text/JSON export
@@ -447,22 +556,37 @@ const DEFAULT_PROJECTS = [
   {name:"Sleep", color:"#6f8fae"}
 ];
 
+// How far back the day bar lets you go (today + 6 previous days = "this week").
+const DAYS_BACK = 6;
+
 function keyFromDate(d){
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
 
+/** Midnight (local) of the calendar date a day key names. */
+function dayDate(key){
+  return new Date(key+'T00:00:00');
+}
+
+function uid(){
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+}
+
 /**
  * Parses a pair of "HH:MM" time-input values into real Date objects and the
- * elapsed minutes between them. If the end time is at or before the start
- * time, it's assumed to roll over into the next day (e.g. an 11pm–1am
- * session) rather than being a negative/zero-length interval.
+ * elapsed minutes between them, anchored to the given logical day (defaults
+ * to today). Times before 5am land on the next calendar date, since the
+ * logical day runs 5am → 5am. If the end time is at or before the start
+ * time, it's assumed to roll over (e.g. an 11pm–1am session).
  * Shared by quests, sleep, and rotting so the wrap-handling only lives once.
  */
-function parseTimeRange(startVal, endVal){
+function parseTimeRange(startVal, endVal, dayKey){
   const [sh,sm] = startVal.split(':').map(Number);
   const [eh,em] = endVal.split(':').map(Number);
-  const startDate = new Date(); startDate.setHours(sh,sm,0,0);
-  const endDate = new Date(); endDate.setHours(eh,em,0,0);
+  const startDate = dayDate(dayKey || todayKey());
+  startDate.setHours(sh,sm,0,0);
+  if(sh < 5) startDate.setDate(startDate.getDate()+1);
+  const endDate = new Date(startDate); endDate.setHours(eh,em,0,0);
   if(endDate <= startDate) endDate.setDate(endDate.getDate()+1);
   const mins = Math.round((endDate-startDate)/60000);
   return { startDate, endDate, mins };
@@ -480,8 +604,8 @@ function todayKey(){
 }
 
 /** Same 5am-boundary logic as logicalNow()/todayKey(), but for an arbitrary
- *  Date instead of "right now" — used to file a completion under the
- *  correct logical day when un-completing a quest (see onDrop). */
+ *  Date instead of "right now" — used to file timers and old completions
+ *  under the correct logical day. */
 function logicalKeyForDate(d){
   const adjusted = new Date(d);
   if(adjusted.getHours() < 5) adjusted.setDate(adjusted.getDate()-1);
@@ -489,12 +613,31 @@ function logicalKeyForDate(d){
 }
 
 function keyMinusDays(key, days){
-  const d = new Date(key+'T00:00:00');
+  const d = dayDate(key);
   d.setDate(d.getDate()-days);
   return keyFromDate(d);
 }
 
-let state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60 }, templates: [], completedCounts: {}, icsEvents: [], icsShowOnClocks: true };
+function isViewingToday(){
+  return selectedDayKey === todayKey();
+}
+
+function fmtTime(d){
+  return new Date(d).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+}
+
+/** "Mon Oct 20" style label, or "today". */
+function dayLabel(key, opts){
+  if(key === todayKey()) return 'today';
+  return dayDate(key).toLocaleDateString([], opts || {weekday:'short', month:'short', day:'numeric'});
+}
+
+function nowHHMM(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+let state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60 }, templates: [], completedCounts: {}, icsEvents: [], icsShowOnClocks: true, timer: null, icsCategory: null };
 let selectedDayKey = null;
 let editingQuestId = null;
 
@@ -518,19 +661,27 @@ function normalizeState(){
   if(!Array.isArray(state.icsEvents)) state.icsEvents = [];
   if(typeof state.icsShowOnClocks !== 'boolean') state.icsShowOnClocks = true;
   if(typeof state.completedCounts !== 'object' || state.completedCounts === null) state.completedCounts = {};
+  if(!state.timer || typeof state.timer !== 'object' || !state.timer.start) state.timer = null;
 
-  // Make sure every logs/meals value is actually an array, not corrupted data
+  // Make sure every logs/meals value is actually an array, not corrupted data,
+  // and every log entry has an id (so single entries can be removed).
   Object.keys(state.logs).forEach(k => { if(!Array.isArray(state.logs[k])) state.logs[k] = []; });
+  Object.values(state.logs).forEach(arr => arr.forEach(l => { if(!l.id) l.id = uid(); }));
   Object.keys(state.meals).forEach(k => { if(!Array.isArray(state.meals[k])) state.meals[k] = []; });
 
-  // Migrate old status names (queued/active/cleared) to the current todo/completed model
+  // Migrate old status names (queued/active/cleared) to the current todo/completed model,
+  // and stamp completed quests with the logical day they count toward.
   state.quests.forEach(q=>{
     if(q.status==='queued' || q.status==='active') q.status='todo';
     if(q.status==='cleared') q.status='completed';
+    if(q.status==='completed' && !q.completedDay) q.completedDay = q.completedAt ? logicalKeyForDate(new Date(q.completedAt)) : todayKey();
   });
 
   if(!state.projects.some(p=>p && p.name==='Sleep')) state.projects.push({name:'Sleep', color:'#6f8fae'});
   if(!state.projects.some(p=>p && p.name==='Rotting')) state.projects.push({name:'Rotting', color:'#5a5a5e'});
+  if(!state.icsCategory || !state.projects.some(p=>p.name===state.icsCategory)){
+    state.icsCategory = state.projects.some(p=>p.name==='Coursework') ? 'Coursework' : (loggableProjects()[0]||{name:'General'}).name;
+  }
 }
 
 /** For every recurring template, makes sure there's a live "to do" instance
@@ -541,7 +692,7 @@ function ensureRecurringQuests(){
     const hasActive = state.quests.some(q=>q.templateId===t.id && q.status==='todo');
     if(!hasActive){
       state.quests.push({
-        id: Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+        id: uid(),
         title:t.title, project:t.project, status:'todo', totalMins:0, completedAt:null, templateId:t.id
       });
     }
@@ -550,7 +701,8 @@ function ensureRecurringQuests(){
 
 /**
  * Runs whenever the calendar flips to a new logical day (5am boundary).
- * - Sweeps completed quests off the live board (they're already in the logs).
+ * - Drops completed quests older than the 7-day window (newer ones stay so
+ *   past days in the day bar still show what got finished).
  * - Re-seeds any recurring quest templates that don't have a live instance.
  * - Auto-archives the day that just fell outside the rolling 7-day window,
  *   so nothing is lost once "This week" stops showing it.
@@ -560,7 +712,8 @@ function performRollover(){
   const key = todayKey();
   if(!state.lastSeen || state.lastSeen === key) return false;
 
-  state.quests = state.quests.filter(q => q.status !== 'completed');
+  const cutoff = keyMinusDays(key, DAYS_BACK);
+  state.quests = state.quests.filter(q => q.status !== 'completed' || (q.completedDay && q.completedDay >= cutoff));
   ensureRecurringQuests();
 
   const fallingOffKey = keyMinusDays(key, 7);
@@ -572,9 +725,10 @@ function performRollover(){
     state.archivedKeys.push(fallingOffKey);
   }
 
-  // If the day view was pinned to "today" or "yesterday", follow the rollover
-  // forward so the selection doesn't silently point at a stale day.
-  if(selectedDayKey === state.lastSeen || selectedDayKey === keyMinusDays(key,1)){
+  // If the day view was pinned to "today", follow the rollover forward so the
+  // selection doesn't silently point at a stale day; and never leave it
+  // pointing outside the window.
+  if(selectedDayKey === state.lastSeen || !selectedDayKey || selectedDayKey < cutoff){
     selectedDayKey = key;
   }
 
@@ -608,11 +762,13 @@ function load(){
   startClock();
 }
 
-/** Ticks the header clock every second and checks for a day rollover while
- *  the app is left open across the 5am boundary. */
+/** Ticks the header clock every second, keeps any running timer's display
+ *  live, and checks for a day rollover while the app is left open across
+ *  the 5am boundary. */
 function startClock(){
   const tick = () => {
     document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    updateTimerDisplays();
     if(performRollover()){ save(); render(); }
   };
   tick();
@@ -631,11 +787,27 @@ function colorFor(project){
   return p ? p.color : '#c9a961';
 }
 
+/** Categories you can file quests under (Sleep/Rotting have their own widgets). */
+function loggableProjects(){
+  return state.projects.filter(p=>p.name!=='Rotting' && p.name!=='Sleep');
+}
+
 function populateProjectSelect(){
   const sel = document.getElementById('newProject');
   const current = sel.value;
-  sel.innerHTML = state.projects.filter(p=>p.name!=='Rotting' && p.name!=='Sleep').map(p=>`<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('');
-  if(current) sel.value = current;
+  sel.innerHTML = loggableProjects().map(p=>`<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('');
+  if(current && loggableProjects().some(p=>p.name===current)) sel.value = current;
+
+  const icsSel = document.getElementById('icsCategory');
+  icsSel.innerHTML = projectOptionsHTML(state.icsCategory);
+}
+
+/** Appends one session to a day's log, giving it an id. */
+function addLog(key, entry){
+  if(!state.logs[key]) state.logs[key] = [];
+  const withId = Object.assign({ id: uid() }, entry);
+  state.logs[key].push(withId);
+  return withId;
 }
 
 // ---------------------------------------------------------------------------
@@ -643,22 +815,23 @@ function populateProjectSelect(){
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Undo toast (used by quest/category deletion)
+// Undo toast (used by every logging / removal action)
 // ---------------------------------------------------------------------------
 let undoRestoreFn = null;
 let undoTimer = null;
 
-/** Shows a dismissible "Undo" toast for ~5 seconds. If clicked in time,
- *  runs restoreFn to reverse whatever just happened. */
+/** Shows a toast for ~5 seconds. If restoreFn is given, the toast carries an
+ *  "Undo" button that runs it to reverse whatever just happened. */
 function showUndoToast(message, restoreFn){
-  undoRestoreFn = restoreFn;
+  undoRestoreFn = restoreFn || null;
   clearTimeout(undoTimer);
   document.getElementById('undoMsg').textContent = message;
+  document.getElementById('undoBtn').style.display = restoreFn ? '' : 'none';
   document.getElementById('undoToast').style.display = 'flex';
   undoTimer = setTimeout(()=>{
     document.getElementById('undoToast').style.display = 'none';
     undoRestoreFn = null;
-  }, 5000);
+  }, restoreFn ? 6000 : 3000);
 }
 
 function performUndo(){
@@ -668,12 +841,108 @@ function performUndo(){
   undoRestoreFn = null;
 }
 
+/** Runs a state mutation, saves + renders, and offers an Undo that restores
+ *  a snapshot taken just before the mutation. Keeps every action reversible
+ *  without each one hand-writing its own inverse. */
+function withUndo(message, mutate){
+  const snapshot = JSON.stringify(state);
+  mutate();
+  save(); render();
+  showUndoToast(message, () => {
+    state = JSON.parse(snapshot);
+    normalizeState();
+    save(); render();
+  });
+}
+
+/** Briefly flags empty/invalid inputs red so it's obvious what's missing. */
+function flagFields(ids){
+  ids.forEach((id, i)=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.remove('invalid');
+    void el.offsetWidth; // restart the shake animation
+    el.classList.add('invalid');
+    if(i===0) el.focus();
+  });
+}
+document.addEventListener('input', e => { if(e.target.classList) e.target.classList.remove('invalid'); });
+
+/** Reads a start/end time pair. An empty end means "now" when logging to
+ *  today. Returns {startVal, endVal}, or null (after flagging) if incomplete. */
+function readRange(startId, endId){
+  const startVal = document.getElementById(startId).value;
+  let endVal = document.getElementById(endId).value;
+  if(!endVal && startVal && isViewingToday()) endVal = nowHHMM();
+  const missing = [];
+  if(!startVal) missing.push(startId);
+  if(!endVal) missing.push(endId);
+  if(missing.length){
+    flagFields(missing);
+    if(!endVal && startVal) showUndoToast('Add an end time — "now" only works when logging to today');
+    return null;
+  }
+  return { startVal, endVal };
+}
+
+// ---------------------------------------------------------------------------
+// Day navigation — which day you're viewing and logging to
+// ---------------------------------------------------------------------------
+
+/** Switches the active day — called by the day bar, the weekly table, and ← →. */
+function selectDay(key){
+  const todayK = todayKey();
+  if(key > todayK || key < keyMinusDays(todayK, DAYS_BACK)) return;
+  selectedDayKey = key;
+  editingQuestId = null;
+  render();
+}
+
+function shiftDay(delta){
+  selectDay(keyMinusDays(selectedDayKey, -delta));
+}
+
+// ← / → step through days when you're not typing in a field.
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='select' || tag==='textarea' || e.altKey || e.ctrlKey || e.metaKey) return;
+  if(e.key==='ArrowLeft'){ e.preventDefault(); shiftDay(-1); }
+  if(e.key==='ArrowRight'){ e.preventDefault(); shiftDay(1); }
+});
+
+/** Renders the sticky day bar: one pill per day of the week (underlined with
+ *  that day's rarity color), prev/next arrows, and a "Today" jump when
+ *  you're looking at a past day. */
+function renderDayBar(){
+  const todayK = todayKey();
+  const days = lastNDays(DAYS_BACK+1);
+  document.getElementById('dayPills').innerHTML = days.map(({key,date})=>{
+    const rarity = rarityForScore(dayScore(key).score);
+    const top = key===todayK ? 'Today' : date.toLocaleDateString([], {weekday:'short'});
+    const long = date.toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'});
+    return `<button class="daypill ${key===selectedDayKey?'active':''}" style="--pill-rarity:${rarity.color}" onclick="selectDay('${key}')" title="${long} · ${rarity.name}">
+      <span>${top}</span><span class="dnum">${date.getDate()}</span>
+    </button>`;
+  }).join('');
+
+  const past = selectedDayKey !== todayK;
+  document.getElementById('daybar').classList.toggle('past', past);
+  document.getElementById('prevDayBtn').disabled = selectedDayKey <= keyMinusDays(todayK, DAYS_BACK);
+  document.getElementById('nextDayBtn').disabled = !past;
+  document.getElementById('backToToday').style.display = past ? '' : 'none';
+
+  const weekday = dayDate(selectedDayKey).toLocaleDateString([], {weekday:'long'});
+  document.getElementById('pageTitle').innerHTML = past
+    ? `${escapeHtml(weekday)}'s quests<span class="past-tag">Logging to ${escapeHtml(dayLabel(selectedDayKey))}</span>`
+    : "Today's quests";
+}
+
 function renderCategoryChips(){
   const el = document.getElementById('categoryChips');
-  el.innerHTML = state.projects.map(p => `
+  el.innerHTML = state.projects.map((p, i) => `
     <div class="chip" style="--chip-color:${p.color}">
       ${escapeHtml(p.name)}
-      <button onclick="removeCategory('${escapeHtml(p.name)}')" aria-label="Remove ${escapeHtml(p.name)}">×</button>
+      <button onclick="removeCategory(${i})" aria-label="Remove ${escapeHtml(p.name)}">×</button>
     </div>
   `).join('');
 }
@@ -683,8 +952,8 @@ function addCategory(){
   const nameEl = document.getElementById('newCatName');
   const colorEl = document.getElementById('newCatColor');
   const name = nameEl.value.trim();
-  if(!name) return;
-  if(state.projects.some(p=>p.name.toLowerCase()===name.toLowerCase())) { nameEl.value=''; return; }
+  if(!name){ flagFields(['newCatName']); return; }
+  if(state.projects.some(p=>p.name.toLowerCase()===name.toLowerCase())) { nameEl.value=''; showUndoToast(`"${name}" already exists`); return; }
   state.projects.push({ name, color: colorEl.value });
   nameEl.value = '';
   save(); render();
@@ -692,64 +961,93 @@ function addCategory(){
 
 /** Removes a category. Existing quests/logs that reference it keep working —
  *  colorFor() falls back to the default gold if the project no longer exists. */
-function removeCategory(name){
-  const idx = state.projects.findIndex(p=>p.name===name);
-  if(idx === -1) return;
-  const removed = state.projects[idx];
-  state.projects.splice(idx, 1);
-  save(); render();
-  showUndoToast(`Removed category "${name}"`, () => {
-    state.projects.splice(idx, 0, removed);
-    save(); render();
-  });
+function removeCategory(idx){
+  const p = state.projects[idx];
+  if(!p) return;
+  withUndo(`Removed category "${p.name}"`, () => { state.projects.splice(idx, 1); });
 }
 
 // ---------------------------------------------------------------------------
 // 3. QUESTS (TO DO / COMPLETED BOARD)
 // ---------------------------------------------------------------------------
 
-/** Adds a new quest in the "To do" column. If "repeat daily" is checked,
- *  it also creates a recurring template — see ensureRecurringQuests(). */
+/** Switches the add button between "Add quest" and "Log & complete" based on
+ *  whether a time range is filled in, and explains what will happen. */
+function updateAddButton(){
+  const hasTimes = document.getElementById('newStart').value || document.getElementById('newEnd').value;
+  document.getElementById('addQuestBtn').textContent = hasTimes ? 'Log & complete' : 'Add quest';
+  const where = isViewingToday() ? 'today' : dayLabel(selectedDayKey);
+  document.getElementById('addHint').textContent = hasTimes
+    ? `Will log this session and mark it completed for ${where}.`
+    : `Optional: add a time range to log it as already done for ${where}.`;
+}
+
+/** Adds a new quest in the "To do" column. If a time range is filled in, it
+ *  instead logs that session to the selected day and files the quest as
+ *  completed there — the quick way to back-fill something you already did.
+ *  If "repeat daily" is checked, it also creates a recurring template. */
 function addQuest(){
-  const title = document.getElementById('newTitle').value.trim();
-  if(!title) return;
+  const titleEl = document.getElementById('newTitle');
+  const title = titleEl.value.trim();
+  if(!title){ flagFields(['newTitle']); return; }
   const project = document.getElementById('newProject').value;
   const recurring = document.getElementById('newRecurring').checked;
-  let templateId = null;
-  if(recurring){
-    templateId = 'tpl-'+Date.now().toString(36);
-    state.templates.push({ id: templateId, title, project });
+  const hasTimes = document.getElementById('newStart').value || document.getElementById('newEnd').value;
+
+  let range = null;
+  if(hasTimes){
+    range = readRange('newStart','newEnd');
+    if(!range) return;
   }
-  state.quests.push({
-    id: Date.now().toString(36),
-    title, project,
-    status: 'todo',
-    totalMins: 0,
-    completedAt: null,
-    templateId
+
+  const key = selectedDayKey;
+  const msg = range ? `Logged "${title}" to ${dayLabel(key)}` : `Added "${title}"`;
+  withUndo(msg, () => {
+    let templateId = null;
+    if(recurring){
+      templateId = 'tpl-'+uid();
+      state.templates.push({ id: templateId, title, project });
+    }
+    const id = uid();
+    if(range){
+      const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
+      state.quests.push({ id, title, project, status:'completed', totalMins: mins, completedAt: endDate.toISOString(), completedDay: key, templateId: null });
+      addLog(key, { title, project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString(), questId:id });
+      state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
+      if(templateId) ensureRecurringQuests();
+    } else {
+      state.quests.push({ id, title, project, status:'todo', totalMins:0, completedAt:null, templateId });
+    }
+    titleEl.value = '';
+    document.getElementById('newStart').value = '';
+    document.getElementById('newEnd').value = '';
+    document.getElementById('newRecurring').checked = false;
   });
-  document.getElementById('newTitle').value = '';
-  document.getElementById('newRecurring').checked = false;
-  save(); render();
+  updateAddButton();
+  titleEl.focus();
 }
 
 /** Stops a quest from recurring in the future (the current instance on the
  *  board is untouched — this just removes the template). */
 function stopRecurring(templateId){
-  state.templates = state.templates.filter(t=>t.id!==templateId);
-  save(); render();
+  const t = state.templates.find(t=>t.id===templateId);
+  withUndo(`"${t ? t.title : 'Quest'}" no longer repeats`, () => {
+    state.templates = state.templates.filter(t=>t.id!==templateId);
+  });
 }
 
-/** Returns <option> markup for the category picker, used by both the
- *  "add quest" bar and the inline quest-edit form. */
+/** Returns <option> markup for the category picker, used by the inline
+ *  quest-edit form and the calendar-category picker. */
 function projectOptionsHTML(selected){
-  return state.projects.filter(p=>p.name!=='Rotting' && p.name!=='Sleep')
+  return loggableProjects()
     .map(p=>`<option value="${escapeHtml(p.name)}" ${p.name===selected?'selected':''}>${escapeHtml(p.name)}</option>`).join('');
 }
 
 function startEditQuest(id){
   editingQuestId = id;
   render();
+  const el = document.getElementById('editTitle-'+id);
+  if(el){ el.focus(); el.select(); }
 }
 
 function cancelEditQuest(){
@@ -769,24 +1067,96 @@ function saveEditQuest(id){
   save(); render();
 }
 
-// Logs the time typed on a quest's own start/end fields as a session —
-// just like sleep. This does NOT complete the quest; it stays in "To do"
-// so you can log more sessions later (work, break, work again, etc).
-// Dragging the card to "Completed" is what actually finishes it.
+function editKeydown(e, id){
+  if(e.key==='Enter'){ e.preventDefault(); saveEditQuest(id); }
+  if(e.key==='Escape'){ e.preventDefault(); cancelEditQuest(); }
+}
+
+// Logs the time typed on a quest's own start/end fields as a session on the
+// selected day — just like sleep. This does NOT complete the quest; it stays
+// in "To do" so you can log more sessions later (work, break, work again).
+// "Done" (or dragging to Completed) is what actually finishes it.
 function logQuestTime(id){
   const q = state.quests.find(q=>q.id===id);
   if(!q) return;
-  const startVal = document.getElementById('qstart-'+id).value;
-  const endVal = document.getElementById('qend-'+id).value;
-  if(!startVal || !endVal) return;
-  const { startDate, endDate, mins } = parseTimeRange(startVal, endVal);
+  const range = readRange('qstart-'+id, 'qend-'+id);
+  if(!range) return;
+  const key = selectedDayKey;
+  const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
+  document.getElementById('qstart-'+id).value = '';
+  document.getElementById('qend-'+id).value = '';
 
-  const key = todayKey();
-  if(!state.logs[key]) state.logs[key] = [];
-  state.logs[key].push({ title:q.title, project:q.project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString(), questId:q.id });
+  withUndo(`Logged ${mins}m · ${q.title}${key===todayKey() ? '' : ' → '+dayLabel(key)}`, () => {
+    addLog(key, { title:q.title, project:q.project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString(), questId:q.id });
+    q.totalMins = (q.totalMins||0) + mins;
+  });
+}
 
-  q.totalMins = (q.totalMins||0) + mins;
-  save(); render();
+/** When a quest finished on `key` — the end of its last session that day,
+ *  otherwise now (today) or midday (past days). */
+function completionTimeFor(key, questId){
+  const ends = (state.logs[key]||[]).filter(l=>l.questId===questId).map(l=>new Date(l.end||l.ts).getTime());
+  if(ends.length) return new Date(Math.max(...ends)).toISOString();
+  if(key===todayKey()) return new Date().toISOString();
+  const d = dayDate(key); d.setHours(12,0,0,0);
+  return d.toISOString();
+}
+
+/** Marks a quest completed for the selected day (feeds that day's rarity via
+ *  completedCounts). Completing a recurring quest on a *past* day files a
+ *  completed copy for that day, so today's instance stays on the board. */
+function completeQuest(id){
+  const q = state.quests.find(q=>q.id===id);
+  if(!q || q.status==='completed') return;
+  if(state.timer && state.timer.questId===id) stopTimer();
+  const key = selectedDayKey;
+
+  withUndo(`Completed "${q.title}"${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => {
+    const live = state.quests.find(o=>o.id===id);
+    const whenISO = completionTimeFor(key, id);
+    if(live.templateId && key !== todayKey()){
+      const cloneId = uid();
+      let movedMins = 0;
+      (state.logs[key]||[]).forEach(l=>{ if(l.questId===id){ l.questId = cloneId; movedMins += l.actualMins||0; } });
+      live.totalMins = Math.max(0, (live.totalMins||0) - movedMins);
+      state.quests.push(Object.assign({}, live, { id:cloneId, status:'completed', totalMins:movedMins, completedAt:whenISO, completedDay:key }));
+    } else {
+      live.status = 'completed';
+      live.completedAt = whenISO;
+      live.completedDay = key;
+    }
+    state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
+  });
+}
+
+/** Moves a completed quest back to To do. This fully reverses it: it
+ *  un-logs every session tied to this quest and resets its total time,
+ *  putting it back to a genuinely untouched "to do" state (Undo restores
+ *  everything if that wasn't what you meant). Recurring copies and
+ *  calendar-attendance quests are removed outright instead. */
+function uncompleteQuest(id){
+  const q = state.quests.find(q=>q.id===id);
+  if(!q || q.status!=='completed') return;
+  const hadTime = (q.totalMins||0) > 0;
+
+  withUndo(`Moved "${q.title}" back to To do${hadTime ? ' (its logged time was cleared)' : ''}`, () => {
+    const live = state.quests.find(o=>o.id===id);
+    const day = live.completedDay || (live.completedAt ? logicalKeyForDate(new Date(live.completedAt)) : null);
+    if(day && state.completedCounts[day]) state.completedCounts[day] = Math.max(0, state.completedCounts[day]-1);
+    Object.keys(state.logs).forEach(dayKey=>{
+      state.logs[dayKey] = state.logs[dayKey].filter(l => l.questId !== id);
+    });
+
+    const isDuplicateRecurring = live.templateId && state.quests.some(o=>o!==live && o.templateId===live.templateId && o.status==='todo');
+    if(live.icsKey || isDuplicateRecurring){
+      state.quests = state.quests.filter(o=>o!==live);
+      return;
+    }
+    live.status = 'todo';
+    live.completedAt = null;
+    live.completedDay = null;
+    live.totalMins = 0;
+  });
 }
 
 // Drag and drop between To do / Completed. draggedQuestId is a fallback for
@@ -800,65 +1170,107 @@ function onDragStart(e, id){
   e.dataTransfer.effectAllowed = 'move';
 }
 
-/** Fired when a card is dropped on the "To do" or "Completed" column.
- *  Logging time and completing a quest are separate actions — this only
- *  updates status. It also keeps a persistent per-day completion count
- *  (completedCounts), since completed quests get purged from the board on
- *  rollover but a day's rarity still needs to know how many were finished. */
-/** Fired when a card is dropped on the "To do" or "Completed" column.
- *  Moving into Completed logs a completion (feeds the rarity score via
- *  completedCounts). Moving a completed quest back OUT to To do fully
- *  reverses that: it un-logs every session tied to this quest and resets
- *  its total time, putting it back to a genuinely untouched "to do" state. */
+/** Fired when a card is dropped on the "To do" or "Completed" column —
+ *  same as pressing the card's Done / Not done button. */
 function onDrop(e, targetStatus){
   e.preventDefault();
   document.querySelectorAll('.col').forEach(c => c.classList.remove('dragover'));
   const id = e.dataTransfer.getData('text/plain') || draggedQuestId;
-  const q = state.quests.find(q=>q.id===id);
-  if(!q) return;
-
-  if(q.status === 'completed' && targetStatus === 'todo'){
-    if(q.completedAt){
-      const oldKey = logicalKeyForDate(new Date(q.completedAt));
-      if(state.completedCounts[oldKey]) state.completedCounts[oldKey] = Math.max(0, state.completedCounts[oldKey]-1);
-    }
-    // Un-log every session tied to this quest, across every day it appears.
-    Object.keys(state.logs).forEach(dayKey=>{
-      state.logs[dayKey] = state.logs[dayKey].filter(l => l.questId !== id);
-    });
-    q.totalMins = 0;
-  }
-
-  q.status = targetStatus;
-  if(targetStatus === 'completed'){
-    q.completedAt = new Date().toISOString();
-    const key = todayKey();
-    state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
-  } else {
-    q.completedAt = null;
-  }
   draggedQuestId = null;
-  save(); render();
+  if(targetStatus === 'completed') completeQuest(id);
+  else uncompleteQuest(id);
 }
 
 function removeQuest(id){
-  const idx = state.quests.findIndex(q=>q.id===id);
-  if(idx === -1) return;
-  const removed = state.quests[idx];
-  state.quests.splice(idx, 1);
-  save(); render();
-  showUndoToast(`Removed "${removed.title}"`, () => {
-    state.quests.splice(idx, 0, removed);
-    save(); render();
+  const q = state.quests.find(q=>q.id===id);
+  if(!q) return;
+  withUndo(`Removed "${q.title}"`, () => {
+    if(state.timer && state.timer.questId===id) state.timer = null;
+    state.quests = state.quests.filter(o=>o.id!==id);
   });
 }
 
-/** Wipes the logged sessions for whichever day is currently selected in
- *  "This week" (defaults to today). Sleep/rotting totals for that day are
- *  untouched — this only clears the logs[] timeline entries. */
+/** Removes one logged session from a day, keeping the totals that mirror it
+ *  (rotting minutes, sleep entry, quest time, calendar attendance) in sync. */
+function removeLogEntry(dayKey, logId){
+  const log = state.logs[dayKey] || [];
+  const entry = log.find(l=>l.id===logId);
+  if(!entry) return;
+  withUndo(`Removed "${entry.title}"`, () => {
+    state.logs[dayKey] = (state.logs[dayKey]||[]).filter(l=>l.id!==logId);
+    const mins = entry.actualMins || 0;
+    if(entry.project==='Rotting') state.rotting[dayKey] = Math.max(0, (state.rotting[dayKey]||0) - mins);
+    if(entry.project==='Sleep') delete state.sleep[dayKey];
+    if(entry.icsKey){
+      const before = state.quests.length;
+      state.quests = state.quests.filter(q=>q.icsKey!==entry.icsKey || q.completedDay!==dayKey);
+      if(state.quests.length < before && state.completedCounts[dayKey]) state.completedCounts[dayKey]--;
+    } else if(entry.questId){
+      const q = state.quests.find(q=>q.id===entry.questId);
+      if(q) q.totalMins = Math.max(0, (q.totalMins||0) - mins);
+    }
+  });
+}
+
+/** Wipes everything logged for the selected day — sessions, sleep, and
+ *  rotting — with an Undo in case it was a misclick. */
 function clearSelectedDay(){
-  state.logs[selectedDayKey] = [];
+  const key = selectedDayKey;
+  withUndo(`Reset ${dayLabel(key)}`, () => {
+    state.logs[key] = [];
+    delete state.sleep[key];
+    delete state.rotting[key];
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Live timers — one at a time; a quest timer or a rotting timer. Stored in
+// state so a timer survives reloads. Stopping files the session under the
+// logical day it *started* on.
+// ---------------------------------------------------------------------------
+
+function startTimer(kind, questId){
+  if(state.timer) stopTimer();
+  state.timer = { kind, questId: questId || null, start: new Date().toISOString() };
   save(); render();
+}
+
+function stopTimer(){
+  const t = state.timer;
+  if(!t) return;
+  const start = new Date(t.start), end = new Date();
+  const mins = Math.round((end-start)/60000);
+  if(mins < 1){
+    state.timer = null;
+    save(); render();
+    showUndoToast('Timer was under a minute — nothing logged');
+    return;
+  }
+  const key = logicalKeyForDate(start);
+  const q = t.kind==='quest' ? state.quests.find(q=>q.id===t.questId) : null;
+  withUndo(`Logged ${mins}m · ${t.kind==='rot' ? 'rotting' : (q ? q.title : 'session')}`, () => {
+    state.timer = null;
+    if(t.kind==='rot') addRotSession(key, start, end);
+    else if(q){
+      addLog(key, { title:q.title, project:q.project, actualMins:mins, start:start.toISOString(), end:end.toISOString(), ts:end.toISOString(), questId:q.id });
+      q.totalMins = (q.totalMins||0) + mins;
+    }
+  });
+}
+
+function timerElapsedText(){
+  if(!state.timer) return '';
+  const secs = Math.max(0, Math.floor((Date.now() - new Date(state.timer.start))/1000));
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  const mmss = String(m).padStart(h?2:1,'0')+':'+String(s).padStart(2,'0');
+  return h ? `${h}:${mmss}` : mmss;
+}
+
+/** Refreshes every running-timer readout (and the tab title) without a full render. */
+function updateTimerDisplays(){
+  const text = timerElapsedText();
+  document.querySelectorAll('.timer-elapsed').forEach(el => { el.textContent = text; });
+  document.title = state.timer ? `● ${text} · trackR` : 'rbuilds / trackR';
 }
 
 // ---------------------------------------------------------------------------
@@ -900,67 +1312,133 @@ function formatTime12(hhmm){
   return `${hour12}:${String(m).padStart(2,'0')} ${period}`;
 }
 
+/** Logs the sleep that ended on the selected day's morning (wake time is
+ *  anchored to that day, bedtime is worked back from it). */
 function logSleep(){
-  const bed = document.getElementById('bedInput').value;
-  const wake = document.getElementById('wakeInput').value;
-  if(!bed || !wake) return;
+  const range = readRange('bedInput','wakeInput');
+  if(!range) return;
+  const { startVal: bed, endVal: wake } = range;
   const hours = computeSleepHours(bed, wake);
-  const key = todayKey();
-  state.sleep[key] = { bed, wake, hours };
+  const key = selectedDayKey;
+  const [wh, wm] = wake.split(':').map(Number);
+  const wakeDate = dayDate(key); wakeDate.setHours(wh, wm, 0, 0);
+  const bedDate = new Date(wakeDate.getTime() - Math.round(hours*60)*60000);
 
-  // Also log it as a timeline entry, just like a quest. Only one sleep
-  // entry makes sense per day, so replace any existing one for today.
-  if(!state.logs[key]) state.logs[key] = [];
-  state.logs[key] = state.logs[key].filter(l => l.project !== 'Sleep');
-  const { startDate: bedDate, endDate: wakeDate } = parseTimeRange(bed, wake);
-  state.logs[key].push({
-    title: `Slept ${hours}h`, project:'Sleep', actualMins: Math.round(hours*60),
-    start: bedDate.toISOString(), end: wakeDate.toISOString(), ts: wakeDate.toISOString()
+  withUndo(`Logged ${hours}h sleep${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => {
+    state.sleep[key] = { bed, wake, hours };
+    // Only one sleep entry makes sense per day, so replace any existing one.
+    state.logs[key] = (state.logs[key]||[]).filter(l => l.project !== 'Sleep');
+    addLog(key, {
+      title: `Slept ${hours}h`, project:'Sleep', actualMins: Math.round(hours*60),
+      start: bedDate.toISOString(), end: wakeDate.toISOString(), ts: wakeDate.toISOString()
+    });
+    document.getElementById('bedInput').value = '';
+    document.getElementById('wakeInput').value = '';
   });
+}
 
-  document.getElementById('bedInput').value = '';
-  document.getElementById('wakeInput').value = '';
-  save(); render();
+/** Records one rotting session on a day (log entry + the day's running total). */
+function addRotSession(key, startDate, endDate){
+  const mins = Math.round((endDate-startDate)/60000);
+  state.rotting[key] = (state.rotting[key]||0) + mins;
+  addLog(key, { title:`Rotted ${mins}m`, project:'Rotting', actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString() });
+  return mins;
 }
 
 // Log a rotting session by typing its start/end time directly.
 function logRotManual(){
+  const range = readRange('rotManualStart','rotManualEnd');
+  if(!range) return;
+  const key = selectedDayKey;
+  const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
+  withUndo(`Logged ${mins}m rotting`, () => {
+    addRotSession(key, startDate, endDate);
+    document.getElementById('rotManualStart').value = '';
+    document.getElementById('rotManualEnd').value = '';
+  });
+}
+
+/** Quick-add a fixed chunk of rotting: from the typed start time if there is
+ *  one, otherwise ending right now (today only). */
+function quickRot(mins){
+  const key = selectedDayKey;
   const startVal = document.getElementById('rotManualStart').value;
-  const endVal = document.getElementById('rotManualEnd').value;
-  if(!startVal || !endVal) return;
-  const key = todayKey();
-  const { startDate, endDate, mins } = parseTimeRange(startVal, endVal);
-  state.rotting[key] = (state.rotting[key]||0) + mins;
-  if(!state.logs[key]) state.logs[key] = [];
-  state.logs[key].push({ title:`Rotted ${mins}m`, project:'Rotting', actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString() });
-  document.getElementById('rotManualStart').value = '';
-  document.getElementById('rotManualEnd').value = '';
-  save(); render();
+  let startDate, endDate;
+  if(startVal){
+    startDate = parseTimeRange(startVal, '00:00', key).startDate;
+    endDate = new Date(startDate.getTime() + mins*60000);
+  } else if(isViewingToday()){
+    endDate = new Date();
+    startDate = new Date(endDate.getTime() - mins*60000);
+  } else {
+    flagFields(['rotManualStart']);
+    showUndoToast('Pick a start time — quick add on a past day starts from it');
+    return;
+  }
+  withUndo(`Logged ${mins}m rotting`, () => {
+    addRotSession(key, startDate, endDate);
+    document.getElementById('rotManualStart').value = '';
+  });
+}
+
+/** Renders the rotting widget's live timer controls + that day's sessions. */
+function renderRotWidget(key, rotMins){
+  const timerRow = document.getElementById('rotTimerRow');
+  if(state.timer && state.timer.kind==='rot'){
+    timerRow.innerHTML = `<div class="timer-run"><span class="timer-dot"></span><span class="timer-elapsed"></span></div>
+      <button class="primary" onclick="stopTimer()">Stop &amp; log</button>`;
+  } else if(isViewingToday()){
+    timerRow.innerHTML = `<button onclick="startTimer('rot')">▶ Start rot timer</button><span class="hint">tap again when you're back</span>`;
+  } else {
+    timerRow.innerHTML = '';
+  }
+
+  document.getElementById('rotQuickHint').textContent = isViewingToday() ? 'quick add · ends now' : 'quick add · from start time';
+
+  const limit = state.goals.rotMins;
+  const meter = document.getElementById('rotMeter');
+  meter.style.width = limit ? Math.min(100, rotMins/limit*100)+'%' : '0%';
+  meter.classList.toggle('over', !!limit && rotMins > limit);
+  document.getElementById('rotMeterLabel').textContent = limit
+    ? (rotMins > limit ? `${rotMins-limit} min over the ${limit} min limit` : `${limit-rotMins} min left of ${limit} min limit`)
+    : 'No limit set';
+
+  const sessions = (state.logs[key]||[]).filter(l=>l.project==='Rotting').sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts));
+  document.getElementById('rotSessions').innerHTML = sessions.map(l => `
+    <div class="session">
+      <span>${l.start ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)} · <b>${l.actualMins}m</b></span>
+      <button class="xbtn" onclick="removeLogEntry('${key}','${l.id}')" title="Remove this session" aria-label="Remove this session">×</button>
+    </div>`).join('');
 }
 
 /** Renders one quest card. "To do" cards get their own start/end time
- *  fields + Log button (logging does NOT change status — see logQuestTime).
- *  "Completed" cards are read-only except for Edit/Remove. Both are
- *  draggable between the two board columns. If this card is the one
- *  currently being edited, an inline rename/recategorize form shows instead. */
+ *  fields + Log button (logging does NOT change status — see logQuestTime),
+ *  plus a live timer and a Done button. "Completed" cards can be sent back
+ *  with "Not done". Both are draggable between the two board columns. If
+ *  this card is being edited, an inline rename/recategorize form shows instead. */
 function cardHTML(q){
   const color = colorFor(q.project);
 
   if(q.id === editingQuestId){
     return `<div class="card" style="--tag-color:${color}">
-      <input type="text" id="editTitle-${q.id}" value="${escapeHtml(q.title)}" style="width:100%;margin-bottom:6px;"/>
-      <select id="editProject-${q.id}" style="width:100%;">${projectOptionsHTML(q.project)}</select>
+      <input type="text" id="editTitle-${q.id}" value="${escapeHtml(q.title)}" style="width:100%;margin-bottom:6px;" onkeydown="editKeydown(event,'${q.id}')"/>
+      <select id="editProject-${q.id}" style="width:100%;" onkeydown="editKeydown(event,'${q.id}')">${projectOptionsHTML(q.project)}</select>
       <div class="card-actions">
-        <button onclick="saveEditQuest('${q.id}')">Save</button>
+        <button class="primary" onclick="saveEditQuest('${q.id}')">Save</button>
         <button onclick="cancelEditQuest()">Cancel</button>
       </div>
     </div>`;
   }
 
-  const recurTag = q.templateId ? `<span class="recur-tag" title="Repeats daily — click to stop" onclick="stopRecurring('${q.templateId}')">↻ daily</span>` : '';
+  const recurTag = q.templateId && state.templates.some(t=>t.id===q.templateId)
+    ? `<span class="recur-tag" title="Repeats daily — click to stop" onclick="stopRecurring('${q.templateId}')">↻ daily</span>` : '';
 
   if(q.status === 'todo'){
-    return `<div class="card" style="--tag-color:${color}" draggable="true" ondragstart="onDragStart(event,'${q.id}')">
+    const timing = state.timer && state.timer.kind==='quest' && state.timer.questId===q.id;
+    let timerBtn = '';
+    if(timing) timerBtn = `<button class="primary" onclick="stopTimer()" title="Stop and log this session"><span class="timer-dot" style="display:inline-block;margin-right:6px;"></span>■ <span class="timer-elapsed"></span></button>`;
+    else if(isViewingToday()) timerBtn = `<button onclick="startTimer('quest','${q.id}')" title="Start a live timer">▶ Start</button>`;
+    return `<div class="card ${timing?'timing':''}" style="--tag-color:${color}" draggable="true" ondragstart="onDragStart(event,'${q.id}')">
       <div class="card-top">
         <div class="card-title">${escapeHtml(q.title)}</div>
       </div>
@@ -969,12 +1447,14 @@ function cardHTML(q){
         ${recurTag}
       </div>
       <div class="row" style="margin-top:8px;gap:6px;">
-        <input type="time" id="qstart-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" oninput="autoAdvanceTime(event,'qend-${q.id}')" onkeydown="handleTimeBackspace(event)"/>
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);">→</span>
-        <input type="time" id="qend-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ logQuestTime('${q.id}'); })"/>
+        <input type="time" id="qstart-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" oninput="autoAdvanceTime(event,'qend-${q.id}')" onkeydown="handleTimeBackspace(event)" title="Start"/>
+        <span class="arrow">→</span>
+        <input type="time" id="qend-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ logQuestTime('${q.id}'); })" title="End — leave empty for now (today only)"/>
+        <button class="small" onclick="logQuestTime('${q.id}')">Log</button>
       </div>
       <div class="card-actions">
-        <button onclick="logQuestTime('${q.id}')">Log</button>
+        ${timerBtn}
+        <button onclick="completeQuest('${q.id}')">✓ Done</button>
         <button onclick="startEditQuest('${q.id}')">Edit</button>
         <button onclick="removeQuest('${q.id}')">Remove</button>
       </div>
@@ -985,10 +1465,11 @@ function cardHTML(q){
       <div class="card-title done">${escapeHtml(q.title)}</div>
     </div>
     <div class="card-meta">
-      <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m' : ''}</span>
-      <span>${q.completedAt ? new Date(q.completedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : ''}</span>
+      <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m' : ''}${q.icsKey ? ' · from calendar' : ''}</span>
+      <span>${q.completedAt ? fmtTime(q.completedAt) : ''}</span>
     </div>
     <div class="card-actions">
+      <button onclick="uncompleteQuest('${q.id}')">↺ Not done</button>
       <button onclick="startEditQuest('${q.id}')">Edit</button>
       <button onclick="removeQuest('${q.id}')">Remove</button>
     </div>
@@ -996,7 +1477,8 @@ function cardHTML(q){
 }
 
 // ---------------------------------------------------------------------------
-// 4b. CALENDAR IMPORT (.ics) — read-only reference events shown on the clocks
+// 4b. CALENDAR IMPORT (.ics) — reference events shown on the clocks, which
+// can be clicked to mark attended (logged as a completed quest for that day)
 // ---------------------------------------------------------------------------
 // Supports plain events and basic recurrence (DAILY/WEEKLY/MONTHLY/YEARLY
 // with INTERVAL, BYDAY, COUNT, UNTIL). Not a full RFC5545 implementation —
@@ -1124,10 +1606,11 @@ function eventOccursOnDate(ev, targetDate){
 }
 
 /** Returns imported calendar events (in the same {title,project,start,end,ts}
- *  shape as logged sessions) that occur on the given day key. All-day events
- *  are skipped since they have no meaningful position on a 24-hour clock. */
+ *  shape as logged sessions) that occur on the given day key, each with an
+ *  icsKey identifying that one occurrence. All-day events are skipped since
+ *  they have no meaningful position on a 24-hour clock. */
 function calendarEventsForDay(dayKey){
-  const targetDate = new Date(dayKey+'T00:00:00');
+  const targetDate = dayDate(dayKey);
   const results = [];
   (state.icsEvents||[]).forEach(ev=>{
     if(ev.allDay) return;
@@ -1135,9 +1618,73 @@ function calendarEventsForDay(dayKey){
     const base = new Date(ev.start);
     const occStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), base.getHours(), base.getMinutes(), base.getSeconds());
     const occEnd = new Date(occStart.getTime() + ev.durationMs);
-    results.push({ title: ev.title, project: 'Calendar', start: occStart.toISOString(), end: occEnd.toISOString(), ts: occStart.toISOString(), actualMins: Math.round(ev.durationMs/60000) });
+    results.push({ title: ev.title, project: 'Calendar', start: occStart.toISOString(), end: occEnd.toISOString(), ts: occStart.toISOString(), actualMins: Math.round(ev.durationMs/60000), icsKey: ev.uid+'@'+dayKey });
   });
-  return results;
+  return results.sort((a,b)=>new Date(a.start)-new Date(b.start));
+}
+
+function isICSAttended(dayKey, icsKey){
+  return (state.logs[dayKey]||[]).some(l=>l.icsKey===icsKey);
+}
+
+/** Marks a calendar event on the selected day as attended — it becomes a
+ *  completed quest (counts toward the day's rarity) with its time logged on
+ *  the clock — or, if it's already marked, un-marks it. */
+function toggleICSAttendance(icsKey){
+  const key = selectedDayKey;
+  const ev = calendarEventsForDay(key).find(e=>e.icsKey===icsKey);
+  if(!ev) return;
+
+  if(isICSAttended(key, icsKey)){
+    withUndo(`Unmarked "${ev.title}"`, () => {
+      state.logs[key] = state.logs[key].filter(l=>l.icsKey!==icsKey);
+      const before = state.quests.length;
+      state.quests = state.quests.filter(q=>q.icsKey!==icsKey);
+      if(state.quests.length < before && state.completedCounts[key]) state.completedCounts[key]--;
+    });
+    return;
+  }
+
+  const project = state.icsCategory || 'General';
+  withUndo(`Marked "${ev.title}" attended`, () => {
+    const id = uid();
+    state.quests.push({ id, title:ev.title, project, status:'completed', totalMins:ev.actualMins, completedAt:ev.end, completedDay:key, templateId:null, icsKey });
+    addLog(key, { title:ev.title, project, actualMins:ev.actualMins, start:ev.start, end:ev.end, ts:ev.end, questId:id, icsKey });
+    state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
+  });
+}
+
+// The selected day's calendar events, indexed by the buttons in renderICSDayList()
+// (avoids putting arbitrary UID text inside inline onclick strings).
+let currentDayICS = [];
+
+function toggleICSAttendanceAt(i){
+  if(currentDayICS[i]) toggleICSAttendance(currentDayICS[i].icsKey);
+}
+
+/** Lists the selected day's calendar events under the clocks, each a button
+ *  that toggles "attended" — a bigger target than the ring on the clock. */
+function renderICSDayList(key){
+  currentDayICS = calendarEventsForDay(key);
+  const el = document.getElementById('icsDayList');
+  if(!currentDayICS.length){ el.innerHTML = ''; return; }
+  const color = colorFor(state.icsCategory);
+  el.innerHTML = `<div class="sublabel">Calendar · click a class here or on the clock to mark it attended</div>
+    <div class="ics-list">${currentDayICS.map((ev,i)=>{
+      const attended = isICSAttended(key, ev.icsKey);
+      return `<button class="ics-item ${attended?'attended':''}" style="--tag-color:${color}" onclick="toggleICSAttendanceAt(${i})">
+        <span>${escapeHtml(ev.title)}</span>
+        <span style="display:flex;gap:12px;align-items:center;">
+          <span class="ics-time">${fmtTime(ev.start)} – ${fmtTime(ev.end)}</span>
+          <span class="ics-state">${attended ? '✓ attended' : '+ went'}</span>
+        </span>
+      </button>`;
+    }).join('')}</div>`;
+}
+
+function setICSCategory(val){
+  state.icsCategory = val;
+  save(); render();
 }
 
 /** Handles the .ics file input — parses and merges events into state
@@ -1154,8 +1701,8 @@ function importICS(e){
       (state.icsEvents||[]).forEach(ev=>{ existingByUid[ev.uid] = ev; });
       normalized.forEach(ev=>{ existingByUid[ev.uid] = ev; });
       state.icsEvents = Object.values(existingByUid);
-      document.getElementById('icsStatus').textContent = `Imported ${normalized.length} event${normalized.length===1?'':'s'} (${state.icsEvents.length} total stored).`;
       save(); render();
+      showUndoToast(`Imported ${normalized.length} event${normalized.length===1?'':'s'} — click a class on the clock to mark it attended`);
     }catch(err){
       console.error('ICS import failed', err);
       document.getElementById('icsStatus').textContent = "Couldn't read that file — make sure it's a valid .ics calendar export.";
@@ -1166,9 +1713,9 @@ function importICS(e){
 }
 
 function clearICS(){
-  state.icsEvents = [];
-  document.getElementById('icsStatus').textContent = 'Imported events cleared.';
-  save(); render();
+  withUndo('Cleared imported events (attended classes stay logged)', () => {
+    state.icsEvents = [];
+  });
 }
 
 function onICSToggle(checked){
@@ -1263,15 +1810,15 @@ function buildClockFace(svgEl, hourLabels, centerBig, centerSmall){
 
 /** Shows the hover tooltip for a clock arc segment, positioned near the
  *  cursor (clamped so it doesn't run off the viewport edge). */
-function showTooltip(e, entry){
+function showTooltip(e, entry, hint){
   const tip = document.getElementById('blockTooltip');
-  const startStr = entry.start ? new Date(entry.start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : '';
-  const endStr = entry.end ? new Date(entry.end).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : '';
+  const startStr = entry.start ? fmtTime(entry.start) : '';
+  const endStr = entry.end ? fmtTime(entry.end) : '';
   const durationStr = entry.actualMins!=null ? ` (${entry.actualMins}m)` : '';
-  tip.innerHTML = `<div class="tt-title">${escapeHtml(entry.title)}</div><div class="tt-time">${escapeHtml(entry.project)} · ${startStr} – ${endStr}${durationStr}</div>`;
+  tip.innerHTML = `<div class="tt-title">${escapeHtml(entry.title)}</div><div class="tt-time">${escapeHtml(entry.project)} · ${startStr} – ${endStr}${durationStr}</div>${hint ? `<div class="tt-hint">${escapeHtml(hint)}</div>` : ''}`;
   tip.style.display = 'block';
   const x = e.clientX, y = e.clientY;
-  const tipWidth = 230, tipHeight = 50;
+  const tipWidth = 230, tipHeight = hint ? 66 : 50;
   tip.style.left = Math.min(x+14, window.innerWidth - tipWidth) + 'px';
   tip.style.top = Math.min(y+14, window.innerHeight - tipHeight) + 'px';
 }
@@ -1286,13 +1833,15 @@ function hideTooltip(){
 // Overlapping sessions (e.g. "hw" logged inside a longer "laundry" block)
 // nest into concentric inner rings instead of colliding — see assignDepths().
 // icsEvents (optional) are events imported from a .ics file — drawn as a
-// thin dashed outer ring so they read as "reference/external", not tracked time.
-function renderClocks(log, isToday, icsEvents){
+// thin dashed outer ring so they read as "reference/external", not tracked
+// time. Clicking one marks it attended (solid ring + a real logged arc).
+function renderClocks(log, isToday, icsEvents, dayKey){
   const svgA = document.getElementById('clockA');
   const svgB = document.getElementById('clockB');
   const hourLabels = [12,1,2,3,4,5,6,7,8,9,10,11];
   buildClockFace(svgA, hourLabels, 'Morning', 'AM');
   buildClockFace(svgB, hourLabels, 'Night', 'PM');
+  hideTooltip();
 
   function minutesFromDayStart(d){
     return d.getHours()*60 + d.getMinutes();
@@ -1341,23 +1890,36 @@ function renderClocks(log, isToday, icsEvents){
 
   function drawPieces(pieces, maxDepthByHalf, isIcsSet){
     pieces.forEach(p=>{
-      const halfOffset = 0; // p.start/p.end are already local to their half
-      const angleStart = ((p.start-halfOffset)/720)*360;
-      const angleEnd = ((p.end-halfOffset)/720)*360;
+      const angleStart = (p.start/720)*360;
+      const angleEnd = (p.end/720)*360;
       const svg = p.half===0 ? svgA : svgB;
       const path = document.createElementNS(SVG_NS,'path');
       if(isIcsSet){
+        const attended = isICSAttended(dayKey, p.entry.icsKey);
         path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,108,104,angleStart,angleEnd));
-        path.setAttribute('class','clock-arc-ics');
-      } else {
-        const maxDepth = maxDepthByHalf[p.half];
-        const thickness = (CLOCK_R_OUTER-CLOCK_R_INNER)/(maxDepth+1);
-        const outer = CLOCK_R_OUTER - p.depth*thickness;
-        const inner = outer - thickness;
-        path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,outer,inner,angleStart,angleEnd));
-        path.setAttribute('fill', colorFor(p.entry.project));
-        path.setAttribute('class','clock-arc');
+        path.setAttribute('class','clock-arc-ics'+(attended?' attended':''));
+        if(attended) path.style.stroke = colorFor(state.icsCategory);
+        svg.appendChild(path);
+
+        // The visible ring is thin, so a wider invisible band catches clicks.
+        const hit = document.createElementNS(SVG_NS,'path');
+        hit.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,112,97,angleStart,angleEnd));
+        hit.setAttribute('class','clock-ics-hit');
+        const hint = attended ? '✓ Attended — click to undo' : 'Click to mark attended';
+        hit.addEventListener('mousemove', e=>showTooltip(e, p.entry, hint));
+        hit.addEventListener('mouseenter', e=>{ path.classList.add('hover'); showTooltip(e, p.entry, hint); });
+        hit.addEventListener('mouseleave', ()=>{ path.classList.remove('hover'); hideTooltip(); });
+        hit.addEventListener('click', ()=>toggleICSAttendance(p.entry.icsKey));
+        svg.appendChild(hit);
+        return;
       }
+      const maxDepth = maxDepthByHalf[p.half];
+      const thickness = (CLOCK_R_OUTER-CLOCK_R_INNER)/(maxDepth+1);
+      const outer = CLOCK_R_OUTER - p.depth*thickness;
+      const inner = outer - thickness;
+      path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,outer,inner,angleStart,angleEnd));
+      path.setAttribute('fill', colorFor(p.entry.project));
+      path.setAttribute('class','clock-arc');
       path.addEventListener('mousemove', e=>showTooltip(e, p.entry));
       path.addEventListener('mouseenter', e=>showTooltip(e, p.entry));
       path.addEventListener('mouseleave', hideTooltip);
@@ -1385,6 +1947,7 @@ function renderClocks(log, isToday, icsEvents){
     line.setAttribute('x1',p1.x); line.setAttribute('y1',p1.y);
     line.setAttribute('x2',p2.x); line.setAttribute('y2',p2.y);
     line.setAttribute('class','clock-now');
+    line.style.pointerEvents = 'none';
     svg.appendChild(line);
   }
 }
@@ -1414,6 +1977,7 @@ function handleTimeBackspace(e, prevId){
   if(e.target.value){
     e.preventDefault();
     e.target.value = '';
+    if(e.target.id==='newStart' || e.target.id==='newEnd') updateAddButton();
   } else if(prevId){
     const prev = document.getElementById(prevId);
     if(prev){ e.preventDefault(); prev.focus(); }
@@ -1421,10 +1985,10 @@ function handleTimeBackspace(e, prevId){
 }
 
 // Combined handler for the "end" field of a start/end pair: Enter logs the
-// time (if filled), Backspace clears it (or hops back to the start field
-// once already empty).
+// time (an empty end means "now" on today), Backspace clears it (or hops
+// back to the start field once already empty).
 function endFieldKeydown(e, prevId, fn){
-  if(e.key === 'Enter' && e.target.value){
+  if(e.key === 'Enter'){
     e.preventDefault();
     fn();
     return;
@@ -1461,15 +2025,6 @@ function dayStats(key){
   return { cleared, mins, sleep, rot, meals, log };
 }
 
-/** Switches which day "Where ___ went" is showing — called by clicking a
- *  row in the weekly table. */
-function selectDay(key){
-  selectedDayKey = key;
-  render();
-}
-
-/** Sums logged minutes per category across the current 7-day window,
- *  sorted highest-first. Used to render the "Time by category" bars. */
 // ---------------------------------------------------------------------------
 // Rarity system — every day earns a "quest drop" rarity based on how many of
 // your own goals it hit: sleep goal met, rotting under your limit, and
@@ -1493,7 +2048,7 @@ function rarityForScore(score){
 /**
  * Scores a day 0–8: +2 for hitting the sleep goal, +2 for staying under the
  * rotting limit, +1 per quest *completed* that day (capped at 4, via
- * completedCounts — see onDrop). Hitting nothing gives Common; hitting
+ * completedCounts — see completeQuest). Hitting nothing gives Common; hitting
  * everything plus 4+ completed quests gives Legendary.
  */
 function dayScore(key){
@@ -1522,10 +2077,6 @@ function swordSVG(color, w, h){
   </svg>`;
 }
 
-/** Updates the header badge with today's live rarity — updates in real
- *  time as you log sleep/rotting/quests throughout the day. Also colors
- *  the page-border frame, so the rarity is visible at a glance, not just
- *  in a small badge. */
 // Tracks the previous render's tier/legendary state *within this session*
 // so we only celebrate genuine transitions, not every re-render.
 let lastRarityTierIndex = null;
@@ -1605,6 +2156,8 @@ function renderMonthGrid(){
   }).join('');
 }
 
+/** Sums logged minutes per category across the current 7-day window,
+ *  sorted highest-first. Used to render the "Time by category" bars. */
 function categoryBreakdownForWeek(){
   const days = lastNDays(7);
   const totals = {};
@@ -1691,9 +2244,7 @@ function dayReportText(key, date){
   if(s.log.length){
     out += "Timeline:\n";
     [...s.log].sort((a,b)=>new Date(a.ts)-new Date(b.ts)).forEach(l=>{
-      const timeRange = l.start && l.end
-        ? `${new Date(l.start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}–${new Date(l.end).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}`
-        : new Date(l.ts).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+      const timeRange = l.start && l.end ? `${fmtTime(l.start)}–${fmtTime(l.end)}` : fmtTime(l.ts);
       const durationText = l.actualMins!=null ? ` (${l.actualMins}m)` : '';
       out += `  ${timeRange}  [${l.project}] ${l.title}${durationText}\n`;
     });
@@ -1730,10 +2281,12 @@ function importJSON(e){
   reader.onload = () => {
     try{
       const parsed = JSON.parse(reader.result);
+      const snapshot = JSON.stringify(state);
       state = Object.assign({ projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60 }, templates: [], completedCounts: {} }, parsed);
       normalizeState();
       selectedDayKey = todayKey();
       save(); render();
+      showUndoToast('Backup restored', () => { state = JSON.parse(snapshot); normalizeState(); save(); render(); });
     }catch(err){
       console.error('import failed', err);
       alert("Couldn't read that file — make sure it's a trackR backup .json file.");
@@ -1747,7 +2300,7 @@ function importJSON(e){
  *  7-day window (called from performRollover), so its data survives even
  *  though "This week" stops showing it. */
 function exportSingleDay(key){
-  const date = new Date(key+'T00:00:00');
+  const date = dayDate(key);
   let out = "RBUILDS TRACKR — DAY ARCHIVE\n";
   out += "Auto-saved on rollover (day fell outside the 7-day window)\n";
   out += "=".repeat(50) + "\n\n";
@@ -1772,70 +2325,104 @@ function exportLog(){
 
 /** Re-renders the entire UI from `state`. Called after every mutation
  *  (add/remove/log/drag/etc) rather than patching the DOM incrementally —
- *  simple to reason about, and cheap enough at this scale. */
+ *  simple to reason about, and cheap enough at this scale. Half-typed
+ *  times on quest cards are carried across the re-render. */
 function render(){
+  const todayK = todayKey();
+  if(!selectedDayKey) selectedDayKey = todayK;
+  const key = selectedDayKey;
+  const viewingToday = key === todayK;
+
   document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'});
 
   populateProjectSelect();
+  renderDayBar();
   renderCategoryChips();
   renderHistory();
   renderCategoryBreakdown();
   renderMonthGrid();
   renderRarityBadge();
+  updateAddButton();
 
-  const cols = {todo:[], completed:[]};
-  state.quests.forEach(q => cols[q.status].push(q));
+  // Board: outstanding quests are shared across days; Completed shows what
+  // was finished on the selected day.
+  const typed = {};
+  document.querySelectorAll('#col-todo input[type=time]').forEach(i => { if(i.value) typed[i.id] = i.value; });
 
+  const cols = {
+    todo: state.quests.filter(q=>q.status==='todo'),
+    completed: state.quests.filter(q=>q.status==='completed' && q.completedDay===key)
+  };
   ['todo','completed'].forEach(status=>{
     const el = document.getElementById('col-'+status);
     document.getElementById('cnt-'+status).textContent = cols[status].length;
-    el.innerHTML = cols[status].length ? cols[status].map(cardHTML).join('') : '<div class="empty">Nothing here.</div>';
+    const emptyText = status==='todo' ? 'Nothing to do — add a quest above.' : (viewingToday ? 'Nothing completed yet today.' : 'Nothing completed this day.');
+    el.innerHTML = cols[status].length ? cols[status].map(cardHTML).join('') : `<div class="empty">${emptyText}</div>`;
   });
+  Object.entries(typed).forEach(([id, v]) => { const el = document.getElementById(id); if(el) el.value = v; });
+  document.getElementById('completedDayLabel').textContent = viewingToday ? '' : '· '+dayLabel(key);
 
-  // Today's widgets (sleep / rot) always reflect the actual current day
-  const todayK = todayKey();
-  const sleepEntry = state.sleep[todayK];
-  const sleepH = sleepHoursFor(todayK);
-  const rotBase = state.rotting[todayK] || 0;
+  // Sleep + rotting widgets reflect the selected day
+  const weekday = dayDate(key).toLocaleDateString([], {weekday:'short'});
+  const sleepEntry = state.sleep[key];
+  const sleepH = sleepHoursFor(key);
+  const rotMins = state.rotting[key] || 0;
+  const sleepGoal = state.goals.sleepHours;
 
+  document.getElementById('sleepTitle').textContent = viewingToday ? 'Sleep last night' : `Sleep · night before ${weekday}`;
   document.getElementById('sleepDisplay').innerHTML = sleepH + '<span class="unit">hrs</span>';
-  document.getElementById('sleepDisplay').style.color = (state.goals.sleepHours && sleepH > 0 && sleepH < state.goals.sleepHours) ? 'var(--red)' : '';
+  document.getElementById('sleepDisplay').style.color = (sleepGoal && sleepH > 0 && sleepH < sleepGoal) ? 'var(--red)' : '';
   document.getElementById('sleepRangeText').textContent = (sleepEntry && sleepEntry.bed && sleepEntry.wake) ? `${formatTime12(sleepEntry.bed)} → ${formatTime12(sleepEntry.wake)}` : '';
-  document.getElementById('sleepGoalInput').value = state.goals.sleepHours;
+  document.getElementById('sleepGoalInput').value = sleepGoal;
+  const sleepMeter = document.getElementById('sleepMeter');
+  sleepMeter.style.width = sleepGoal ? Math.min(100, sleepH/sleepGoal*100)+'%' : '0%';
+  sleepMeter.classList.toggle('met', !!sleepGoal && sleepH >= sleepGoal);
+  sleepMeter.classList.toggle('over', !!sleepGoal && sleepH > 0 && sleepH < sleepGoal);
+  document.getElementById('sleepMeterLabel').textContent = !sleepH ? 'Not logged yet'
+    : (sleepH >= sleepGoal ? `Goal met (${sleepGoal}h)` : `${Math.round((sleepGoal-sleepH)*10)/10}h short of ${sleepGoal}h goal`);
 
-  document.getElementById('rotDisplay').innerHTML = rotBase + '<span class="unit">min</span>';
-  document.getElementById('rotDisplay').style.color = (state.goals.rotMins && rotBase > state.goals.rotMins) ? 'var(--red)' : '';
+  document.getElementById('rotTitle').textContent = viewingToday ? 'Time spent rotting' : `Rotting · ${weekday}`;
+  document.getElementById('rotDisplay').innerHTML = rotMins + '<span class="unit">min</span>';
+  document.getElementById('rotDisplay').style.color = (state.goals.rotMins && rotMins > state.goals.rotMins) ? 'var(--red)' : '';
   document.getElementById('rotGoalInput').value = state.goals.rotMins;
+  renderRotWidget(key, rotMins);
 
-  // "Where ___ went" section reflects whichever day is selected in the week view
-  if(!selectedDayKey) selectedDayKey = todayK;
-  const dayLabel = selectedDayKey === todayK ? "today" : new Date(selectedDayKey+'T00:00:00').toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'});
-  document.getElementById('dayGoneTitle').textContent = `Where ${dayLabel} went`;
-  document.getElementById('resetDayBtn').textContent = selectedDayKey === todayK ? "Reset today's log" : `Reset ${dayLabel}'s log`;
+  // "Where ___ went" section
+  const dayName = viewingToday ? "today" : dayDate(key).toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'});
+  document.getElementById('dayGoneTitle').textContent = `Where ${dayName} went`;
+  document.getElementById('resetDayBtn').textContent = viewingToday ? "Reset today" : `Reset ${dayLabel(key)}`;
 
-  const s = dayStats(selectedDayKey);
-
+  const s = dayStats(key);
   document.getElementById('statCleared').textContent = s.cleared;
   document.getElementById('statMins').textContent = s.mins;
   document.getElementById('statSleep').textContent = s.sleep;
   document.getElementById('statRot').textContent = s.rot;
 
-  // Render the dual clock-face visualization for the selected day
-  const icsEventsForDay = state.icsShowOnClocks ? calendarEventsForDay(selectedDayKey) : [];
-  renderClocks(s.log, selectedDayKey === todayK, icsEventsForDay);
+  const icsEventsForDay = state.icsShowOnClocks ? calendarEventsForDay(key) : [];
+  renderClocks(s.log, viewingToday, icsEventsForDay, key);
+  renderICSDayList(key);
   document.getElementById('icsShowToggle').checked = state.icsShowOnClocks;
+  document.getElementById('icsStatus').textContent = state.icsEvents.length
+    ? `${state.icsEvents.length} event${state.icsEvents.length===1?'':'s'} stored. Click a class on the clock to mark it attended.`
+    : 'No calendar imported yet.';
 
   const rows = document.getElementById('logrows');
   if(s.log.length===0){
-    rows.innerHTML = '<div class="empty">Nothing logged for this day.</div>';
+    rows.innerHTML = `<div class="empty">Nothing logged for ${viewingToday ? 'today' : 'this day'} yet.</div>`;
   } else {
-    rows.innerHTML = [...s.log].sort((a,b)=>new Date(b.ts)-new Date(a.ts)).map(l => `
+    rows.innerHTML = [...s.log].sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts)).map(l => `
       <div class="logrow">
         <span class="lname">${escapeHtml(l.title)} <span style="color:${colorFor(l.project)}">· ${escapeHtml(l.project)}</span></span>
-        <span class="ltime">${new Date(l.ts).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</span>
+        <span class="lright">
+          <span class="ltime">${l.start && l.end ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)}</span>
+          <span class="ldur">${l.actualMins!=null ? l.actualMins+'m' : ''}</span>
+          <button class="xbtn" onclick="removeLogEntry('${key}','${l.id}')" title="Remove this entry" aria-label="Remove this entry">×</button>
+        </span>
       </div>
     `).join('');
   }
+
+  updateTimerDisplays();
 }
 
 // Enter-to-submit for the two plain text inputs (quest title, new category name)
@@ -1850,6 +2437,7 @@ try{
 }catch(e){
   console.error('load() crashed, resetting to a clean state:', e);
   state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], lastSeen: todayKey() };
+  normalizeState();
   selectedDayKey = todayKey();
   save();
   render();
