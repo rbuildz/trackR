@@ -71,8 +71,21 @@
   .daybar{
     position:sticky;top:0;z-index:50;background:var(--bg);
     display:flex;align-items:center;gap:6px;
-    padding:10px 0;margin-bottom:28px;border-bottom:1px solid var(--border);
+    padding:10px 0;margin-bottom:12px;border-bottom:1px solid var(--border);
   }
+
+  /* ---- Rarity breakdown strip (what the selected day earned, and why) ---- */
+  .rarity-strip{
+    display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-bottom:26px;
+    font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);
+  }
+  .rarity-strip .rs-tier{display:flex;align-items:center;gap:6px;font-weight:500;padding-right:4px;}
+  .crit{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+  .crit .ck{width:11px;text-align:center;}
+  .crit.met{color:var(--text);}
+  .crit.met .ck{color:var(--green);}
+  .crit.locked{color:var(--gold);}
+  .crit.penalty{color:var(--red);}
   .daybar.past{border-bottom-color:var(--gold-dim);}
   .daybar .navbtn{padding:10px 10px;flex-shrink:0;}
   .daypills{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;}
@@ -178,6 +191,12 @@
   }
   .chip button{border:none;background:none;padding:0 0 0 4px;font-size:12px;color:var(--text-mute);}
   .chip button:hover{color:var(--red);}
+  .chip .chip-fit{
+    font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:1px 5px;margin-left:2px;
+    border:1px solid var(--border);border-radius:2px;color:var(--text-mute);
+  }
+  .chip .chip-fit.on{border-color:var(--green);color:var(--green);}
+  .chip .chip-fit:hover{color:var(--green);border-color:var(--green);}
   .catform{display:flex;gap:8px;flex-wrap:wrap;}
 
   /* ---- Dual analog clock visualization ("Where ___ went") ---- */
@@ -196,8 +215,11 @@
   .clock-arc-ics{pointer-events:none;fill:none;stroke:var(--text-mute);stroke-width:2;stroke-dasharray:3,3;opacity:0.8;transition:opacity 0.1s;}
   .clock-arc-ics.hover{opacity:1;stroke:var(--text);stroke-width:3;}
   .clock-arc-ics.attended{stroke-dasharray:none;stroke-width:3;opacity:1;}
+  .clock-arc-ics.missed{stroke:var(--red);opacity:1;}
+  .clock-arc-ics.excused{opacity:0.3;}
   .clock-ics-hit{fill:transparent;cursor:pointer;}
   .clock-now{stroke:var(--gold);stroke-width:2;}
+  .clock-daystart{stroke:var(--gold-dim);stroke-width:1;stroke-dasharray:2,2;}
   .block-tooltip{
     position:fixed;pointer-events:none;background:var(--panel-2);border:1px solid var(--gold-dim);
     border-radius:2px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);
@@ -221,6 +243,12 @@
   .ics-item:hover .ics-state{color:var(--gold);}
   .ics-item.attended{border-style:solid;border-left:3px solid var(--tag-color,var(--gold));}
   .ics-item.attended .ics-state{color:var(--gold);}
+  .ics-item.missed{border-color:var(--red);}
+  .ics-item.missed .ics-state{color:var(--red);}
+  .ics-item.excused{opacity:0.55;}
+  .ics-row{display:flex;gap:6px;align-items:stretch;}
+  .ics-row .ics-item{flex:1;min-width:0;}
+  .ics-row .ics-cancel{padding:4px 10px;font-size:10px;flex-shrink:0;}
 
   /* ---- Plain-text log rows below the clocks ---- */
   .logrow{
@@ -231,9 +259,16 @@
   .logrow .lright{display:flex;align-items:center;gap:10px;white-space:nowrap;}
   .logrow .ltime{color:var(--gold);}
   .logrow .ldur{width:44px;text-align:right;}
+  .logrow .ltime.editable{cursor:pointer;border-bottom:1px dashed transparent;}
+  .logrow .ltime.editable:hover{border-bottom-color:var(--gold-dim);}
+  .logrow.editing{flex-wrap:wrap;}
+  .logrow.editing input[type=time]{padding:5px 6px;font-size:12px;width:104px;}
 
   /* ---- Sleep + Rotting widget cards ---- */
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .widgets{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .widgets input[type=time]{width:108px !important;padding:8px 8px;font-size:13px;}
+  .widgets select{padding:8px 8px;font-size:13px;}
   .widgetcard{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:16px;}
   .widgetcard .wtitle{
     font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
@@ -322,7 +357,7 @@
   .tier-toast .check-mark{width:12px;text-align:center;flex-shrink:0;}
 
   /* ---- Responsive: narrow screens drop secondary columns ---- */
-  @media(max-width:640px){#qb{padding:20px 16px 64px;} .board{grid-template-columns:1fr;} .grid2{grid-template-columns:1fr;} .weekrow,.weekhead{grid-template-columns:50px 1fr 1fr 30px;font-size:9px;}
+  @media(max-width:640px){#qb{padding:20px 16px 64px;} .board{grid-template-columns:1fr;} .grid2, .widgets{grid-template-columns:1fr;} .weekrow,.weekhead{grid-template-columns:50px 1fr 1fr 30px;font-size:9px;}
     .date{text-align:left;}
     .weekrow span:nth-child(3), .weekrow span:nth-child(5), .weekrow span:nth-child(6), .weekrow span:nth-child(7), .weekrow span:nth-child(8), .weekrow span:nth-child(9),
     .weekhead span:nth-child(3), .weekhead span:nth-child(5), .weekhead span:nth-child(6), .weekhead span:nth-child(7), .weekhead span:nth-child(8), .weekhead span:nth-child(9){display:none;}}
@@ -354,6 +389,7 @@
     <button class="navbtn" id="nextDayBtn" onclick="shiftDay(1)" title="Next day (→)" aria-label="Next day">›</button>
     <button class="primary" id="backToToday" onclick="selectDay(todayKey())">Today</button>
   </div>
+  <div class="rarity-strip" id="rarityStrip"></div>
 
   <section class="block" style="border-top:none;padding-top:0;">
     <div class="addbar">
@@ -380,7 +416,7 @@
   </section>
 
   <section class="block">
-    <div class="grid2">
+    <div class="widgets">
       <div class="widgetcard">
         <div class="wtitle" id="sleepTitle">Sleep last night</div>
         <div class="bignum" id="sleepDisplay">0<span class="unit">hrs</span></div>
@@ -421,6 +457,33 @@
         <div class="goalrow">
           <label for="rotGoalInput">Limit</label>
           <input type="number" id="rotGoalInput" min="0" style="width:56px;" onchange="setRotGoal(this.value)"/>
+          <span>min</span>
+        </div>
+      </div>
+      <div class="widgetcard">
+        <div class="wtitle" id="fitTitle">Fitness today</div>
+        <div class="bignum" id="fitDisplay">0<span class="unit">min</span></div>
+        <div class="meter"><div class="meter-fill" id="fitMeter"></div></div>
+        <div class="meter-label" id="fitMeterLabel"></div>
+        <div class="row">
+          <select id="fitCategory" title="Which fitness category to log under"></select>
+        </div>
+        <div class="row">
+          <input type="time" id="fitStart" style="width:120px;" oninput="autoAdvanceTime(event,'fitEnd')" onkeydown="handleTimeBackspace(event)" title="Start time"/>
+          <span class="arrow">→</span>
+          <input type="time" id="fitEnd" style="width:120px;" onkeydown="endFieldKeydown(event,'fitStart',logFitManual)" title="End time — leave empty for now (today only)"/>
+          <button onclick="logFitManual()">Log</button>
+        </div>
+        <div class="quickbtns">
+          <span class="hint" id="fitQuickHint">quick add</span>
+          <button class="small" onclick="quickFit(15)">+15m</button>
+          <button class="small" onclick="quickFit(30)">+30m</button>
+          <button class="small" onclick="quickFit(60)">+1h</button>
+        </div>
+        <div class="session-list" id="fitSessions"></div>
+        <div class="goalrow">
+          <label for="fitGoalInput">Epic needs</label>
+          <input type="number" id="fitGoalInput" min="0" style="width:56px;" onchange="setFitGoal(this.value)"/>
           <span>min</span>
         </div>
       </div>
@@ -467,7 +530,7 @@
       </div>
     </div>
     <div id="weekRarityAvg" class="rarity-week-avg"></div>
-    <div class="hint" style="margin-bottom:10px;">Click a day to view it or log to it (or use ← → keys)</div>
+    <div class="hint" style="margin-bottom:10px;">Click a day to view it or log to it · keys: ← → change day, T today, N new quest</div>
     <div id="weekHistory"></div>
     <h2 class="section-title" style="font-size:14px;margin-top:22px;">Last 30 days</h2>
     <div id="monthGrid" class="month-grid"></div>
@@ -494,8 +557,10 @@
     <div class="catform">
       <input type="text" id="newCatName" placeholder="New category name" style="width:180px;"/>
       <input type="color" id="newCatColor" value="#c9a961"/>
+      <label class="checklabel"><input type="checkbox" id="newCatFitness"/> fitness</label>
       <button onclick="addCategory()">Add category</button>
     </div>
+    <div class="hint" style="margin-top:8px;">Tap FIT on a category to count its time toward the fitness goal.</div>
   </section>
 
 </div>
@@ -523,6 +588,9 @@
  *                none is currently outstanding — see ensureRecurringQuests()
  *   timer      – the one running live timer, {kind:'rot'|'quest', questId, start} or null
  *   icsCategory – category used when an imported calendar event is marked attended
+ *   icsExcused – {icsKey: true} for class occurrences marked cancelled
+ *   icsSince   – first day missed classes count against rarity
+ *   projects[].fitness – category counts toward goals.fitnessMins (the Epic gate)
  *
  * The "day" a session belongs to is a *logical* day that rolls over at 5am,
  * not midnight — see todayKey()/logicalNow() below. This means working past
@@ -637,9 +705,10 @@ function nowHHMM(){
   return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 
-let state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60 }, templates: [], completedCounts: {}, icsEvents: [], icsShowOnClocks: true, timer: null, icsCategory: null };
+let state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60, fitnessMins: 30 }, templates: [], completedCounts: {}, icsEvents: [], icsShowOnClocks: true, timer: null, icsCategory: null, icsExcused: {} };
 let selectedDayKey = null;
 let editingQuestId = null;
+let editingLogId = null;
 
 // Repairs the state object so every field is always the right type,
 // regardless of what shape old/corrupted saved data might be in.
@@ -656,6 +725,8 @@ function normalizeState(){
   if(!state.goals || typeof state.goals !== 'object') state.goals = { sleepHours: 8, rotMins: 60 };
   if(typeof state.goals.sleepHours !== 'number') state.goals.sleepHours = 8;
   if(typeof state.goals.rotMins !== 'number') state.goals.rotMins = 60;
+  if(typeof state.goals.fitnessMins !== 'number') state.goals.fitnessMins = 30;
+  if(typeof state.icsExcused !== 'object' || state.icsExcused === null) state.icsExcused = {};
   if(!Array.isArray(state.templates)) state.templates = [];
   if(typeof state.bestStreak !== 'number') state.bestStreak = 0;
   if(!Array.isArray(state.icsEvents)) state.icsEvents = [];
@@ -679,6 +750,47 @@ function normalizeState(){
 
   if(!state.projects.some(p=>p && p.name==='Sleep')) state.projects.push({name:'Sleep', color:'#6f8fae'});
   if(!state.projects.some(p=>p && p.name==='Rotting')) state.projects.push({name:'Rotting', color:'#5a5a5e'});
+
+  // One-time: give people a Fitness category to start with (they can flag
+  // their own categories as fitness instead, or delete this one).
+  if(!state.fitnessSeeded){
+    if(!state.projects.some(p=>p.fitness)){
+      const existing = state.projects.find(p=>p.name.toLowerCase()==='fitness');
+      if(existing) existing.fitness = true;
+      else state.projects.push({name:'Fitness', color:'#c97a8a', fitness:true});
+    }
+    state.fitnessSeeded = true;
+  }
+
+  // One-time: attended classes used to count as completed quests for rarity.
+  // They no longer earn anything (missing one costs a tier instead), so take
+  // them back out of the per-day completion counts.
+  if(!state.icsCountsMigrated){
+    state.quests.forEach(q=>{
+      if(q.icsKey && q.status==='completed' && q.completedDay && state.completedCounts[q.completedDay]) state.completedCounts[q.completedDay]--;
+    });
+    state.icsCountsMigrated = true;
+  }
+
+  // Missed-class penalties only apply from (a week before) the first import,
+  // so importing a calendar doesn't retroactively wreck old history.
+  if(state.icsEvents.length && !state.icsSince) state.icsSince = keyMinusDays(todayKey(), DAYS_BACK);
+
+  // One-time: older versions stored overnight sleep as "bed tonight → wake
+  // tomorrow" relative to when it was logged. Re-anchor every sleep entry so
+  // it ends on the morning of the day it belongs to.
+  if(!state.sleepAnchored){
+    Object.keys(state.logs).forEach(k=>{
+      const s = state.sleep[k];
+      if(!s || typeof s !== 'object' || !s.bed || !s.wake) return;
+      const { bedDate, wakeDate } = sleepRange(s.bed, s.wake, k);
+      state.logs[k].forEach(l=>{
+        if(l.project!=='Sleep') return;
+        l.start = bedDate.toISOString(); l.end = wakeDate.toISOString(); l.ts = wakeDate.toISOString();
+      });
+    });
+    state.sleepAnchored = true;
+  }
   if(!state.icsCategory || !state.projects.some(p=>p.name===state.icsCategory)){
     state.icsCategory = state.projects.some(p=>p.name==='Coursework') ? 'Coursework' : (loggableProjects()[0]||{name:'General'}).name;
   }
@@ -895,6 +1007,7 @@ function selectDay(key){
   if(key > todayK || key < keyMinusDays(todayK, DAYS_BACK)) return;
   selectedDayKey = key;
   editingQuestId = null;
+  editingLogId = null;
   render();
 }
 
@@ -908,6 +1021,8 @@ document.addEventListener('keydown', e => {
   if(tag==='input' || tag==='select' || tag==='textarea' || e.altKey || e.ctrlKey || e.metaKey) return;
   if(e.key==='ArrowLeft'){ e.preventDefault(); shiftDay(-1); }
   if(e.key==='ArrowRight'){ e.preventDefault(); shiftDay(1); }
+  if(e.key==='n' || e.key==='/'){ e.preventDefault(); document.getElementById('newTitle').focus(); }
+  if(e.key==='t'){ e.preventDefault(); selectDay(todayKey()); }
 });
 
 /** Renders the sticky day bar: one pill per day of the week (underlined with
@@ -917,7 +1032,7 @@ function renderDayBar(){
   const todayK = todayKey();
   const days = lastNDays(DAYS_BACK+1);
   document.getElementById('dayPills').innerHTML = days.map(({key,date})=>{
-    const rarity = rarityForScore(dayScore(key).score);
+    const rarity = dayRarity(key).rarity;
     const top = key===todayK ? 'Today' : date.toLocaleDateString([], {weekday:'short'});
     const long = date.toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'});
     return `<button class="daypill ${key===selectedDayKey?'active':''}" style="--pill-rarity:${rarity.color}" onclick="selectDay('${key}')" title="${long} · ${rarity.name}">
@@ -942,9 +1057,19 @@ function renderCategoryChips(){
   el.innerHTML = state.projects.map((p, i) => `
     <div class="chip" style="--chip-color:${p.color}">
       ${escapeHtml(p.name)}
+      ${p.name==='Sleep' || p.name==='Rotting' ? '' : `<button class="chip-fit ${p.fitness?'on':''}" onclick="toggleFitness(${i})" title="${p.fitness ? 'Counts as fitness — click to stop' : 'Click to count this category as fitness'}">FIT</button>`}
       <button onclick="removeCategory(${i})" aria-label="Remove ${escapeHtml(p.name)}">×</button>
     </div>
   `).join('');
+}
+
+/** Flags/unflags a category as fitness (its time counts toward the Epic gate). */
+function toggleFitness(idx){
+  const p = state.projects[idx];
+  if(!p) return;
+  p.fitness = !p.fitness;
+  save(); render();
+  showUndoToast(p.fitness ? `"${p.name}" now counts as fitness` : `"${p.name}" no longer counts as fitness`);
 }
 
 /** Adds a new category chip (project) with a name + color, ignoring duplicates. */
@@ -954,8 +1079,10 @@ function addCategory(){
   const name = nameEl.value.trim();
   if(!name){ flagFields(['newCatName']); return; }
   if(state.projects.some(p=>p.name.toLowerCase()===name.toLowerCase())) { nameEl.value=''; showUndoToast(`"${name}" already exists`); return; }
-  state.projects.push({ name, color: colorEl.value });
+  const fitEl = document.getElementById('newCatFitness');
+  state.projects.push({ name, color: colorEl.value, fitness: fitEl.checked });
   nameEl.value = '';
+  fitEl.checked = false;
   save(); render();
 }
 
@@ -1142,7 +1269,8 @@ function uncompleteQuest(id){
   withUndo(`Moved "${q.title}" back to To do${hadTime ? ' (its logged time was cleared)' : ''}`, () => {
     const live = state.quests.find(o=>o.id===id);
     const day = live.completedDay || (live.completedAt ? logicalKeyForDate(new Date(live.completedAt)) : null);
-    if(day && state.completedCounts[day]) state.completedCounts[day] = Math.max(0, state.completedCounts[day]-1);
+    // Attended classes never counted toward completions, so there's nothing to take back.
+    if(!live.icsKey && day && state.completedCounts[day]) state.completedCounts[day] = Math.max(0, state.completedCounts[day]-1);
     Object.keys(state.logs).forEach(dayKey=>{
       state.logs[dayKey] = state.logs[dayKey].filter(l => l.questId !== id);
     });
@@ -1202,12 +1330,74 @@ function removeLogEntry(dayKey, logId){
     if(entry.project==='Rotting') state.rotting[dayKey] = Math.max(0, (state.rotting[dayKey]||0) - mins);
     if(entry.project==='Sleep') delete state.sleep[dayKey];
     if(entry.icsKey){
-      const before = state.quests.length;
-      state.quests = state.quests.filter(q=>q.icsKey!==entry.icsKey || q.completedDay!==dayKey);
-      if(state.quests.length < before && state.completedCounts[dayKey]) state.completedCounts[dayKey]--;
+      state.quests = state.quests.filter(q=>q.icsKey!==entry.icsKey);
     } else if(entry.questId){
       const q = state.quests.find(q=>q.id===entry.questId);
       if(q) q.totalMins = Math.max(0, (q.totalMins||0) - mins);
+    }
+  });
+}
+
+function hhmmOf(iso){
+  const d = new Date(iso);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+// Inline time editing for timeline entries — fix a typo'd session instead
+// of deleting and re-logging it.
+function startLogEdit(id){
+  editingLogId = id;
+  render();
+  const el = document.getElementById('logEditStart');
+  if(el) el.focus();
+}
+
+function cancelLogEdit(){
+  editingLogId = null;
+  render();
+}
+
+function logEditKeydown(e, key, id){
+  if(e.key==='Enter'){ e.preventDefault(); saveLogEdit(key, id); }
+  if(e.key==='Escape'){ e.preventDefault(); cancelLogEdit(); }
+}
+
+/** Saves new start/end times for a logged session, keeping everything that
+ *  mirrors it (rotting total, sleep entry, quest time) in step. */
+function saveLogEdit(key, id){
+  const l = (state.logs[key]||[]).find(l=>l.id===id);
+  if(!l) return;
+  const startVal = document.getElementById('logEditStart').value;
+  const endVal = document.getElementById('logEditEnd').value;
+  const missing = [];
+  if(!startVal) missing.push('logEditStart');
+  if(!endVal) missing.push('logEditEnd');
+  if(missing.length){ flagFields(missing); return; }
+
+  let startDate, endDate, mins;
+  if(l.project==='Sleep'){
+    const r = sleepRange(startVal, endVal, key);
+    startDate = r.bedDate; endDate = r.wakeDate; mins = Math.round(r.hours*60);
+  } else {
+    ({ startDate, endDate, mins } = parseTimeRange(startVal, endVal, key));
+  }
+
+  editingLogId = null;
+  withUndo(`Updated "${l.title}" to ${fmtTime(startDate)} – ${fmtTime(endDate)}`, () => {
+    const live = state.logs[key].find(x=>x.id===id);
+    const delta = mins - (live.actualMins||0);
+    live.start = startDate.toISOString(); live.end = endDate.toISOString(); live.ts = endDate.toISOString();
+    live.actualMins = mins;
+    if(live.project==='Rotting'){
+      state.rotting[key] = Math.max(0, (state.rotting[key]||0) + delta);
+      live.title = `Rotted ${mins}m`;
+    } else if(live.project==='Sleep'){
+      const hours = Math.round((mins/60)*100)/100;
+      state.sleep[key] = { bed:startVal, wake:endVal, hours };
+      live.title = `Slept ${hours}h`;
+    } else if(live.questId){
+      const q = state.quests.find(q=>q.id===live.questId);
+      if(q) q.totalMins = Math.max(0, (q.totalMins||0) + delta);
     }
   });
 }
@@ -1312,17 +1502,25 @@ function formatTime12(hhmm){
   return `${hour12}:${String(m).padStart(2,'0')} ${period}`;
 }
 
-/** Logs the sleep that ended on the selected day's morning (wake time is
- *  anchored to that day, bedtime is worked back from it). */
+/** Real dates for a night's sleep that belongs to day `key`: the wake time
+ *  lands on that day's calendar date, and bedtime is worked back from it —
+ *  so 11:30 PM → 7:30 AM logged for Tuesday means Monday 11:30 PM to
+ *  Tuesday 7:30 AM, not Tuesday night. */
+function sleepRange(bed, wake, key){
+  const hours = computeSleepHours(bed, wake);
+  const [wh, wm] = wake.split(':').map(Number);
+  const wakeDate = dayDate(key); wakeDate.setHours(wh, wm, 0, 0);
+  const bedDate = new Date(wakeDate.getTime() - Math.round(hours*60)*60000);
+  return { bedDate, wakeDate, hours };
+}
+
+/** Logs the sleep that ended on the selected day's morning. */
 function logSleep(){
   const range = readRange('bedInput','wakeInput');
   if(!range) return;
   const { startVal: bed, endVal: wake } = range;
-  const hours = computeSleepHours(bed, wake);
   const key = selectedDayKey;
-  const [wh, wm] = wake.split(':').map(Number);
-  const wakeDate = dayDate(key); wakeDate.setHours(wh, wm, 0, 0);
-  const bedDate = new Date(wakeDate.getTime() - Math.round(hours*60)*60000);
+  const { bedDate, wakeDate, hours } = sleepRange(bed, wake, key);
 
   withUndo(`Logged ${hours}h sleep${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => {
     state.sleep[key] = { bed, wake, hours };
@@ -1358,27 +1556,121 @@ function logRotManual(){
   });
 }
 
-/** Quick-add a fixed chunk of rotting: from the typed start time if there is
- *  one, otherwise ending right now (today only). */
-function quickRot(mins){
-  const key = selectedDayKey;
-  const startVal = document.getElementById('rotManualStart').value;
-  let startDate, endDate;
+/** Works out the range for a quick-add chunk of `mins`: from the typed start
+ *  time if there is one, otherwise ending right now (today only). Returns
+ *  {startDate, endDate}, or null (after flagging the start field). */
+function quickRange(startId, mins){
+  const startVal = document.getElementById(startId).value;
   if(startVal){
-    startDate = parseTimeRange(startVal, '00:00', key).startDate;
-    endDate = new Date(startDate.getTime() + mins*60000);
-  } else if(isViewingToday()){
-    endDate = new Date();
-    startDate = new Date(endDate.getTime() - mins*60000);
-  } else {
-    flagFields(['rotManualStart']);
-    showUndoToast('Pick a start time — quick add on a past day starts from it');
-    return;
+    const startDate = parseTimeRange(startVal, '00:00', selectedDayKey).startDate;
+    return { startDate, endDate: new Date(startDate.getTime() + mins*60000) };
   }
+  if(isViewingToday()){
+    const endDate = new Date();
+    return { startDate: new Date(endDate.getTime() - mins*60000), endDate };
+  }
+  flagFields([startId]);
+  showUndoToast('Pick a start time — quick add on a past day starts from it');
+  return null;
+}
+
+function quickRot(mins){
+  const range = quickRange('rotManualStart', mins);
+  if(!range) return;
   withUndo(`Logged ${mins}m rotting`, () => {
-    addRotSession(key, startDate, endDate);
+    addRotSession(selectedDayKey, range.startDate, range.endDate);
     document.getElementById('rotManualStart').value = '';
   });
+}
+
+// ---------------------------------------------------------------------------
+// 4c. FITNESS — any category flagged "fitness" counts. Epic or better needs
+// at least goals.fitnessMins of it that day (see dayRarity).
+// ---------------------------------------------------------------------------
+
+function isFitnessProject(name){
+  const p = state.projects.find(p=>p.name===name);
+  return !!(p && p.fitness);
+}
+
+function fitnessMinsFor(key){
+  return (state.logs[key]||[]).filter(l=>isFitnessProject(l.project)).reduce((s,l)=>s+(l.actualMins||0), 0);
+}
+
+function setFitGoal(val){
+  state.goals.fitnessMins = parseInt(val) || 0;
+  save(); render();
+}
+
+/** Logs a workout session (a plain session, not a quest) under the picked
+ *  fitness category. */
+function addFitSession(key, startDate, endDate){
+  const project = document.getElementById('fitCategory').value;
+  const mins = Math.round((endDate-startDate)/60000);
+  addLog(key, { title: project, project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString() });
+  return mins;
+}
+
+function fitnessReady(){
+  if(document.getElementById('fitCategory').value) return true;
+  showUndoToast('Mark a category as FIT (under Categories) first');
+  return false;
+}
+
+function logFitManual(){
+  if(!fitnessReady()) return;
+  const range = readRange('fitStart','fitEnd');
+  if(!range) return;
+  const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, selectedDayKey);
+  withUndo(`Logged ${mins}m fitness`, () => {
+    addFitSession(selectedDayKey, startDate, endDate);
+    document.getElementById('fitStart').value = '';
+    document.getElementById('fitEnd').value = '';
+  });
+}
+
+function quickFit(mins){
+  if(!fitnessReady()) return;
+  const range = quickRange('fitStart', mins);
+  if(!range) return;
+  withUndo(`Logged ${mins}m fitness`, () => {
+    addFitSession(selectedDayKey, range.startDate, range.endDate);
+    document.getElementById('fitStart').value = '';
+  });
+}
+
+/** Renders the fitness card: minutes vs. the Epic requirement, a picker of
+ *  fitness categories, and that day's fitness sessions (from any source —
+ *  quest logs, timers, or this card). */
+function renderFitWidget(key){
+  const fitProjects = state.projects.filter(p=>p.fitness && p.name!=='Sleep' && p.name!=='Rotting');
+  const sel = document.getElementById('fitCategory');
+  const current = sel.value;
+  sel.innerHTML = fitProjects.length
+    ? fitProjects.map(p=>`<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('')
+    : '<option value="">No fitness categories yet</option>';
+  if(current && fitProjects.some(p=>p.name===current)) sel.value = current;
+
+  const mins = fitnessMinsFor(key);
+  const goal = state.goals.fitnessMins;
+  document.getElementById('fitTitle').textContent = isViewingToday() ? 'Fitness today' : `Fitness · ${dayDate(key).toLocaleDateString([], {weekday:'short'})}`;
+  document.getElementById('fitDisplay').innerHTML = mins + '<span class="unit">min</span>';
+  document.getElementById('fitDisplay').style.color = goal && mins < goal ? 'var(--text)' : '';
+  const meter = document.getElementById('fitMeter');
+  meter.style.width = goal ? Math.min(100, mins/goal*100)+'%' : '100%';
+  meter.classList.toggle('met', mins >= goal);
+  document.getElementById('fitMeterLabel').textContent = mins >= goal
+    ? 'Epic + Legendary unlocked'
+    : `${goal-mins} min more to unlock Epic`;
+  document.getElementById('fitGoalInput').value = goal;
+  document.getElementById('fitQuickHint').textContent = isViewingToday() ? 'quick add · ends now' : 'quick add · from start time';
+
+  const sessions = (state.logs[key]||[]).filter(l=>isFitnessProject(l.project)).sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts));
+  document.getElementById('fitSessions').innerHTML = sessions.map(l => `
+    <div class="session">
+      <span>${escapeHtml(l.title)} · ${l.start ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)} · <b>${l.actualMins}m</b></span>
+      <button class="xbtn" onclick="removeLogEntry('${key}','${l.id}')" title="Remove this session" aria-label="Remove this session">×</button>
+    </div>`).join('');
 }
 
 /** Renders the rotting widget's live timer controls + that day's sessions. */
@@ -1630,6 +1922,10 @@ function isICSAttended(dayKey, icsKey){
 /** Marks a calendar event on the selected day as attended — it becomes a
  *  completed quest (counts toward the day's rarity) with its time logged on
  *  the clock — or, if it's already marked, un-marks it. */
+/** Marks a calendar event on the selected day as attended — it's logged on
+ *  the clock and filed as a completed quest — or, if it's already marked,
+ *  un-marks it. Attending earns nothing toward rarity; missing a class is
+ *  what costs a tier (see classStatusFor / dayRarity). */
 function toggleICSAttendance(icsKey){
   const key = selectedDayKey;
   const ev = calendarEventsForDay(key).find(e=>e.icsKey===icsKey);
@@ -1638,9 +1934,7 @@ function toggleICSAttendance(icsKey){
   if(isICSAttended(key, icsKey)){
     withUndo(`Unmarked "${ev.title}"`, () => {
       state.logs[key] = state.logs[key].filter(l=>l.icsKey!==icsKey);
-      const before = state.quests.length;
       state.quests = state.quests.filter(q=>q.icsKey!==icsKey);
-      if(state.quests.length < before && state.completedCounts[key]) state.completedCounts[key]--;
     });
     return;
   }
@@ -1648,10 +1942,43 @@ function toggleICSAttendance(icsKey){
   const project = state.icsCategory || 'General';
   withUndo(`Marked "${ev.title}" attended`, () => {
     const id = uid();
+    delete state.icsExcused[icsKey];
     state.quests.push({ id, title:ev.title, project, status:'completed', totalMins:ev.actualMins, completedAt:ev.end, completedDay:key, templateId:null, icsKey });
     addLog(key, { title:ev.title, project, actualMins:ev.actualMins, start:ev.start, end:ev.end, ts:ev.end, questId:id, icsKey });
-    state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
   });
+}
+
+/** Marks a class as cancelled (no class that day), so it isn't counted as
+ *  missed. Toggles back off. Cancelling an attended class un-attends it. */
+function toggleICSExcused(icsKey){
+  const key = selectedDayKey;
+  const ev = calendarEventsForDay(key).find(e=>e.icsKey===icsKey);
+  if(!ev) return;
+  const excused = !!state.icsExcused[icsKey];
+  withUndo(excused ? `"${ev.title}" is back on` : `"${ev.title}" marked cancelled`, () => {
+    if(excused){ delete state.icsExcused[icsKey]; return; }
+    state.icsExcused[icsKey] = true;
+    state.logs[key] = (state.logs[key]||[]).filter(l=>l.icsKey!==icsKey);
+    state.quests = state.quests.filter(q=>q.icsKey!==icsKey);
+  });
+}
+
+/** Status of one class occurrence: attended, cancelled, upcoming (hasn't
+ *  ended yet today), or missed. Days before the calendar was imported
+ *  (state.icsSince) are never "missed". */
+function classStateFor(key, ev){
+  if(isICSAttended(key, ev.icsKey)) return 'attended';
+  if(state.icsExcused[ev.icsKey]) return 'excused';
+  if(!state.icsSince || key < state.icsSince) return 'untracked';
+  if(new Date(ev.end) > new Date()) return 'upcoming';
+  return 'missed';
+}
+
+/** Tallies a day's classes by state — dayRarity() drops one tier per missed class. */
+function classStatusFor(key){
+  const out = { total:0, attended:0, excused:0, upcoming:0, missed:0, untracked:0 };
+  calendarEventsForDay(key).forEach(ev=>{ out.total++; out[classStateFor(key, ev)]++; });
+  return out;
 }
 
 // The selected day's calendar events, indexed by the buttons in renderICSDayList()
@@ -1662,23 +1989,33 @@ function toggleICSAttendanceAt(i){
   if(currentDayICS[i]) toggleICSAttendance(currentDayICS[i].icsKey);
 }
 
+function toggleICSExcusedAt(i){
+  if(currentDayICS[i]) toggleICSExcused(currentDayICS[i].icsKey);
+}
+
+const CLASS_STATE_LABELS = { attended:'✓ attended', excused:'cancelled', upcoming:'+ went', missed:'missed · −1 tier', untracked:'+ went' };
+
 /** Lists the selected day's calendar events under the clocks, each a button
- *  that toggles "attended" — a bigger target than the ring on the clock. */
+ *  that toggles "attended" (a bigger target than the ring on the clock),
+ *  plus a "cancelled" toggle for classes that didn't happen. */
 function renderICSDayList(key){
   currentDayICS = calendarEventsForDay(key);
   const el = document.getElementById('icsDayList');
   if(!currentDayICS.length){ el.innerHTML = ''; return; }
   const color = colorFor(state.icsCategory);
-  el.innerHTML = `<div class="sublabel">Calendar · click a class here or on the clock to mark it attended</div>
+  el.innerHTML = `<div class="sublabel">Classes · click to mark attended — each one missed drops the day a tier</div>
     <div class="ics-list">${currentDayICS.map((ev,i)=>{
-      const attended = isICSAttended(key, ev.icsKey);
-      return `<button class="ics-item ${attended?'attended':''}" style="--tag-color:${color}" onclick="toggleICSAttendanceAt(${i})">
-        <span>${escapeHtml(ev.title)}</span>
-        <span style="display:flex;gap:12px;align-items:center;">
-          <span class="ics-time">${fmtTime(ev.start)} – ${fmtTime(ev.end)}</span>
-          <span class="ics-state">${attended ? '✓ attended' : '+ went'}</span>
-        </span>
-      </button>`;
+      const st = classStateFor(key, ev);
+      return `<div class="ics-row">
+        <button class="ics-item ${st}" style="--tag-color:${color}" onclick="toggleICSAttendanceAt(${i})">
+          <span>${escapeHtml(ev.title)}</span>
+          <span style="display:flex;gap:12px;align-items:center;">
+            <span class="ics-time">${fmtTime(ev.start)} – ${fmtTime(ev.end)}</span>
+            <span class="ics-state">${CLASS_STATE_LABELS[st]}</span>
+          </span>
+        </button>
+        <button class="ics-cancel" onclick="toggleICSExcusedAt(${i})" title="${st==='excused' ? 'Class is back on' : 'No class today (cancelled / holiday) — not counted as missed'}">${st==='excused' ? 'Undo cancel' : 'Cancelled'}</button>
+      </div>`;
     }).join('')}</div>`;
 }
 
@@ -1827,6 +2164,31 @@ function hideTooltip(){
   document.getElementById('blockTooltip').style.display = 'none';
 }
 
+/** Everything that actually happened during logical day `key` — the real
+ *  window 5 AM that day → 5 AM the next — clipped to that window. Pulls from
+ *  the neighbouring days' logs too, so last night's sleep (logged to today)
+ *  shows its 11:30 PM–5 AM part on *yesterday's* clocks and only its
+ *  5 AM–7:30 AM part on today's. Each clipped copy keeps the full entry in
+ *  `_full` for the tooltip. */
+function clockEntriesFor(key){
+  const windowStart = dayDate(key); windowStart.setHours(5,0,0,0);
+  const windowEnd = new Date(windowStart.getTime() + 24*3600000);
+  const out = [];
+  [keyMinusDays(key,1), key, keyMinusDays(key,-1)].forEach(k=>{
+    (state.logs[k]||[]).forEach(l=>{
+      const s = new Date(l.start || l.ts), e = new Date(l.end || l.ts);
+      if(e < windowStart || s >= windowEnd) return;
+      if(e.getTime() === s.getTime() && k !== key) return; // instant entries belong to their own day only
+      out.push(Object.assign({}, l, {
+        start: new Date(Math.max(s, windowStart)).toISOString(),
+        end: new Date(Math.min(e, windowEnd)).toISOString(),
+        _full: l
+      }));
+    });
+  });
+  return out;
+}
+
 // Draws two standard 12-hour analog clock faces (12am–12pm and 12pm–12am),
 // numbered 12 at top like a normal clock, with an arc segment for every
 // logged interval, split at the halfway seam and at midnight-wrap as needed.
@@ -1895,17 +2257,17 @@ function renderClocks(log, isToday, icsEvents, dayKey){
       const svg = p.half===0 ? svgA : svgB;
       const path = document.createElementNS(SVG_NS,'path');
       if(isIcsSet){
-        const attended = isICSAttended(dayKey, p.entry.icsKey);
+        const st = classStateFor(dayKey, p.entry);
         path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,108,104,angleStart,angleEnd));
-        path.setAttribute('class','clock-arc-ics'+(attended?' attended':''));
-        if(attended) path.style.stroke = colorFor(state.icsCategory);
+        path.setAttribute('class','clock-arc-ics '+st);
+        if(st==='attended') path.style.stroke = colorFor(state.icsCategory);
         svg.appendChild(path);
 
         // The visible ring is thin, so a wider invisible band catches clicks.
         const hit = document.createElementNS(SVG_NS,'path');
         hit.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,112,97,angleStart,angleEnd));
         hit.setAttribute('class','clock-ics-hit');
-        const hint = attended ? '✓ Attended — click to undo' : 'Click to mark attended';
+        const hint = { attended:'✓ Attended — click to undo', missed:'Missed (−1 tier) — click if you went', excused:'Cancelled — click if it happened and you went' }[st] || 'Click to mark attended';
         hit.addEventListener('mousemove', e=>showTooltip(e, p.entry, hint));
         hit.addEventListener('mouseenter', e=>{ path.classList.add('hover'); showTooltip(e, p.entry, hint); });
         hit.addEventListener('mouseleave', ()=>{ path.classList.remove('hover'); hideTooltip(); });
@@ -1920,12 +2282,25 @@ function renderClocks(log, isToday, icsEvents, dayKey){
       path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,outer,inner,angleStart,angleEnd));
       path.setAttribute('fill', colorFor(p.entry.project));
       path.setAttribute('class','clock-arc');
-      path.addEventListener('mousemove', e=>showTooltip(e, p.entry));
-      path.addEventListener('mouseenter', e=>showTooltip(e, p.entry));
+      const full = p.entry._full || p.entry;
+      const hint = full.id && dayKey && !(state.logs[dayKey]||[]).includes(full) ? 'Logged to a neighbouring day' : '';
+      path.addEventListener('mousemove', e=>showTooltip(e, full, hint));
+      path.addEventListener('mouseenter', e=>showTooltip(e, full, hint));
       path.addEventListener('mouseleave', hideTooltip);
       svg.appendChild(path);
     });
   }
+
+  // Dashed marker at 5 o'clock on the AM face: where this logical day
+  // starts (5 AM) and ends (the 12–5 AM slice is the night after).
+  const ds1 = polarToXY(CLOCK_CX,CLOCK_CY,CLOCK_R_INNER-4,150);
+  const ds2 = polarToXY(CLOCK_CX,CLOCK_CY,CLOCK_R_OUTER+6,150);
+  const dayStart = document.createElementNS(SVG_NS,'line');
+  dayStart.setAttribute('x1',ds1.x); dayStart.setAttribute('y1',ds1.y);
+  dayStart.setAttribute('x2',ds2.x); dayStart.setAttribute('y2',ds2.y);
+  dayStart.setAttribute('class','clock-daystart');
+  dayStart.style.pointerEvents = 'none';
+  svgA.appendChild(dayStart);
 
   const logPieces = buildPieces(log);
   const maxDepthByHalf = assignDepths(logPieces);
@@ -2030,7 +2405,11 @@ function dayStats(key){
 // your own goals it hit: sleep goal met, rotting under your limit, and
 // quests completed. Common → Uncommon → Rare → Epic → Legendary, each with
 // its own color and sword icon, echoing the "quest board" the app started as.
+// Two rules sit on top of the score: Epic and Legendary need the day's
+// fitness minutes, and every missed class knocks the day down one tier.
 // ---------------------------------------------------------------------------
+
+const EPIC_TIER = 3;
 
 const RARITY_TIERS = [
   { min:0, max:1, name:'Common',    color:'#9a9a9a' },
@@ -2046,19 +2425,68 @@ function rarityForScore(score){
 }
 
 /**
- * Scores a day 0–8: +2 for hitting the sleep goal, +2 for staying under the
- * rotting limit, +1 per quest *completed* that day (capped at 4, via
- * completedCounts — see completeQuest). Hitting nothing gives Common; hitting
- * everything plus 4+ completed quests gives Legendary.
+ * Rates a day. Score 0–8: +2 for hitting the sleep goal, +2 for staying
+ * under the rotting limit, +1 per quest *completed* that day (capped at 4,
+ * via completedCounts — see completeQuest; attended classes don't count).
+ * Then:
+ *   - Epic or above needs goals.fitnessMins of fitness-category time, else
+ *     the day is capped at Rare.
+ *   - Each missed class drops it one tier (never below Common).
+ * Returns the final tier plus every input, for the breakdown strip/tooltips.
  */
-function dayScore(key){
+function dayRarity(key){
   const stats = dayStats(key);
   const sleepMet = state.goals.sleepHours > 0 && stats.sleep >= state.goals.sleepHours;
   const rotMet = stats.rot <= state.goals.rotMins;
   const questCount = state.completedCounts[key] || 0;
   const questPoints = Math.min(questCount, 4);
   const score = (sleepMet?2:0) + (rotMet?2:0) + questPoints;
-  return { sleepMet, rotMet, questCount, questPoints, score };
+
+  const fitnessMins = fitnessMinsFor(key);
+  const fitnessMet = fitnessMins >= state.goals.fitnessMins;
+  const baseTier = RARITY_TIERS.indexOf(rarityForScore(score));
+  const fitnessCapped = !fitnessMet && baseTier >= EPIC_TIER;
+  let tier = fitnessCapped ? EPIC_TIER-1 : baseTier;
+
+  const classes = classStatusFor(key);
+  tier = Math.max(0, tier - classes.missed);
+
+  return { rarity: RARITY_TIERS[tier], tier, baseTier, score, sleepMet, rotMet, questCount, questPoints, fitnessMins, fitnessMet, fitnessCapped, classes };
+}
+
+/** One-line plain-English explanation of a day's rarity, for tooltips. */
+function rarityExplain(r){
+  const parts = [
+    `score ${r.score}/8`,
+    `sleep goal ${r.sleepMet?'met':'not met'}`,
+    `rotting limit ${r.rotMet?'met':'not met'}`,
+    `${r.questCount} quest${r.questCount===1?'':'s'} completed`,
+    `${r.fitnessMins}/${state.goals.fitnessMins} min fitness${r.fitnessCapped?' (capped at Rare)':''}`
+  ];
+  if(r.classes.missed) parts.push(`${r.classes.missed} class${r.classes.missed===1?'':'es'} missed (−${r.classes.missed} tier)`);
+  return parts.join(' · ');
+}
+
+/** Renders the strip under the day bar: the selected day's rarity and each
+ *  thing feeding it, so it's obvious what to do to push it up a tier. */
+function renderRarityStrip(key){
+  const r = dayRarity(key);
+  const goal = state.goals.fitnessMins;
+  const crit = (cls, mark, text, title) => `<span class="crit ${cls}" ${title?`title="${escapeHtml(title)}"`:''}><span class="ck">${mark}</span>${text}</span>`;
+  const items = [
+    `<span class="rs-tier" style="color:${r.rarity.color}" title="${escapeHtml(rarityExplain(r))}">${swordSVG(r.rarity.color, 12, 18)} ${r.rarity.name}</span>`,
+    crit(r.sleepMet?'met':'', r.sleepMet?'✓':'○', `Sleep ${sleepHoursFor(key)}/${state.goals.sleepHours}h`, '+2 when you hit your sleep goal'),
+    crit(r.rotMet?'met':'penalty', r.rotMet?'✓':'×', `Rot ${state.rotting[key]||0}/${state.goals.rotMins}m`, '+2 while rotting stays under your limit'),
+    crit(r.questPoints>=4?'met':'', r.questPoints>=4?'✓':'○', `Quests ${Math.min(r.questCount,4)}/4`, '+1 per completed quest, up to 4'),
+    crit(r.fitnessMet?'met':(r.fitnessCapped?'locked':''), r.fitnessMet?'✓':'○', `Fitness ${r.fitnessMins}/${goal}m${r.fitnessCapped?' · Epic locked':''}`, `Epic and Legendary need ${goal} min in a FIT category`)
+  ];
+  const c = r.classes;
+  if(c.total){
+    if(c.missed) items.push(crit('penalty', '×', `${c.missed} class${c.missed===1?'':'es'} missed · −${c.missed} tier`));
+    else if(c.upcoming) items.push(crit('', '○', `Classes ${c.attended}/${c.total - c.excused} · ${c.upcoming} to go`));
+    else items.push(crit('met', '✓', c.excused === c.total ? 'Classes cancelled' : `Classes ${c.attended}/${c.total - c.excused}`));
+  }
+  document.getElementById('rarityStrip').innerHTML = items.join('');
 }
 
 /** Renders a simple line-art sword icon (matches the eagle sigil's
@@ -2082,12 +2510,12 @@ function swordSVG(color, w, h){
 let lastRarityTierIndex = null;
 let wasLegendary = false;
 
-/** Consecutive days (today backward) scoring Rare (4+) or better. */
+/** Consecutive days (today backward) rated Rare or better. */
 function computeRarityStreak(){
   let streak = 0;
   let key = todayKey();
   for(let i=0; i<3650; i++){
-    if(dayScore(key).score < 4) break;
+    if(dayRarity(key).tier < 2) break;
     streak++;
     key = keyMinusDays(key, 1);
   }
@@ -2096,13 +2524,17 @@ function computeRarityStreak(){
 
 /** Shows a brief checklist toast when today's rarity tier goes UP —
  *  what got hit to earn it. */
-function showTierUpgradeToast(rarity, sleepMet, rotMet, questCount){
+function showTierUpgradeToast(r){
   const el = document.getElementById('tierUpgradeToast');
+  const rarity = r.rarity;
+  const item = (met, text) => `<div class="check-item ${met?'met':''}"><span class="check-mark">${met?'✓':'○'}</span> ${text}</div>`;
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;">${swordSVG(rarity.color,14,20)} Upgraded to <b style="color:${rarity.color}">${rarity.name}</b></div>
-    <div class="check-item ${sleepMet?'met':''}"><span class="check-mark">${sleepMet?'✓':'○'}</span> Sleep goal</div>
-    <div class="check-item ${rotMet?'met':''}"><span class="check-mark">${rotMet?'✓':'○'}</span> Rotting limit</div>
-    <div class="check-item ${questCount>0?'met':''}"><span class="check-mark">${questCount>0?'✓':'○'}</span> Quests completed (${questCount})</div>
+    ${item(r.sleepMet, 'Sleep goal')}
+    ${item(r.rotMet, 'Rotting limit')}
+    ${item(r.questCount>0, `Quests completed (${r.questCount})`)}
+    ${item(r.fitnessMet, `Fitness ${r.fitnessMins}/${state.goals.fitnessMins}m`)}
+    ${r.classes.total ? item(!r.classes.missed, r.classes.missed ? `${r.classes.missed} class missed` : 'No classes missed') : ''}
   `;
   el.style.display = 'block';
   clearTimeout(el._hideTimer);
@@ -2114,13 +2546,13 @@ function showTierUpgradeToast(rarity, sleepMet, rotMet, questCount){
  *  toast / legendary pulse on genuine tier transitions. */
 function renderRarityBadge(){
   const key = todayKey();
-  const { score, sleepMet, rotMet, questCount } = dayScore(key);
-  const rarity = rarityForScore(score);
-  const tierIndex = RARITY_TIERS.indexOf(rarity);
+  const r = dayRarity(key);
+  const rarity = r.rarity;
+  const tierIndex = r.tier;
 
   const el = document.getElementById('rarityBadge');
   el.innerHTML = swordSVG(rarity.color, 13, 19) + `<span style="color:${rarity.color}">${rarity.name}</span>`;
-  el.title = `Today: ${score}/8 — sleep goal ${sleepMet?'met':'not met'}, rotting limit ${rotMet?'met':'not met'}, ${questCount} quest${questCount===1?'':'s'} completed`;
+  el.title = `Today: ${rarityExplain(r)}`;
 
   const frame = document.getElementById('rarityFrame');
   frame.style.setProperty('--pulse-color', rarity.color);
@@ -2133,7 +2565,7 @@ function renderRarityBadge(){
   wasLegendary = isLegendary;
 
   if(lastRarityTierIndex !== null && tierIndex > lastRarityTierIndex){
-    showTierUpgradeToast(rarity, sleepMet, rotMet, questCount);
+    showTierUpgradeToast(r);
   }
   lastRarityTierIndex = tierIndex;
 
@@ -2150,9 +2582,9 @@ function renderMonthGrid(){
   const el = document.getElementById('monthGrid');
   const days = lastNDays(30);
   el.innerHTML = days.map(({key,date})=>{
-    const rarity = rarityForScore(dayScore(key).score);
+    const r = dayRarity(key);
     const label = date.toLocaleDateString([], {month:'short', day:'numeric'});
-    return `<div class="month-cell" style="background:${rarity.color}" title="${label}: ${rarity.name}"></div>`;
+    return `<div class="month-cell" style="background:${r.rarity.color}" title="${label}: ${r.rarity.name} — ${escapeHtml(rarityExplain(r))}"></div>`;
   }).join('');
 }
 
@@ -2203,15 +2635,14 @@ function renderHistory(){
   const avgSleep = Math.round((allStats.reduce((s,d)=>s+d.sleep,0)/7)*10)/10;
   const avgRot = Math.round(allStats.reduce((s,d)=>s+d.rot,0)/7);
 
-  const scores = days.map(({key})=>dayScore(key).score);
-  const avgScore = scores.reduce((a,b)=>a+b,0)/7;
-  const avgRarity = rarityForScore(Math.round(avgScore));
+  const tiers = days.map(({key})=>dayRarity(key).tier);
+  const avgRarity = RARITY_TIERS[Math.round(tiers.reduce((a,b)=>a+b,0)/7)];
   avgEl.innerHTML = `${swordSVG(avgRarity.color, 16, 24)} This week: <b style="color:${avgRarity.color}">${avgRarity.name}</b>`;
 
   const head = `<div class="weekhead"><span>Day</span><span>Sessions</span><span>Avg</span><span>Mins</span><span>Avg</span><span>Sleep</span><span>Avg</span><span>Rot</span><span>Avg</span><span></span></div>`;
   const rows = days.map(({key,date})=>{
     const s = dayStats(key);
-    const rarity = rarityForScore(dayScore(key).score);
+    const rarity = dayRarity(key).rarity;
     const label = key===todayK ? 'Today' : date.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});
     const classes = ['weekrow'];
     if(key===todayK) classes.push('today');
@@ -2337,6 +2768,7 @@ function render(){
 
   populateProjectSelect();
   renderDayBar();
+  renderRarityStrip(key);
   renderCategoryChips();
   renderHistory();
   renderCategoryBreakdown();
@@ -2386,6 +2818,7 @@ function render(){
   document.getElementById('rotDisplay').style.color = (state.goals.rotMins && rotMins > state.goals.rotMins) ? 'var(--red)' : '';
   document.getElementById('rotGoalInput').value = state.goals.rotMins;
   renderRotWidget(key, rotMins);
+  renderFitWidget(key);
 
   // "Where ___ went" section
   const dayName = viewingToday ? "today" : dayDate(key).toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'});
@@ -2399,7 +2832,7 @@ function render(){
   document.getElementById('statRot').textContent = s.rot;
 
   const icsEventsForDay = state.icsShowOnClocks ? calendarEventsForDay(key) : [];
-  renderClocks(s.log, viewingToday, icsEventsForDay, key);
+  renderClocks(clockEntriesFor(key), viewingToday, icsEventsForDay, key);
   renderICSDayList(key);
   document.getElementById('icsShowToggle').checked = state.icsShowOnClocks;
   document.getElementById('icsStatus').textContent = state.icsEvents.length
@@ -2410,16 +2843,30 @@ function render(){
   if(s.log.length===0){
     rows.innerHTML = `<div class="empty">Nothing logged for ${viewingToday ? 'today' : 'this day'} yet.</div>`;
   } else {
-    rows.innerHTML = [...s.log].sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts)).map(l => `
-      <div class="logrow">
-        <span class="lname">${escapeHtml(l.title)} <span style="color:${colorFor(l.project)}">· ${escapeHtml(l.project)}</span></span>
+    rows.innerHTML = [...s.log].sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts)).map(l => {
+      const name = `<span class="lname">${escapeHtml(l.title)} <span style="color:${colorFor(l.project)}">· ${escapeHtml(l.project)}</span>${isFitnessProject(l.project) ? ' <span class="hint" style="color:var(--green)">FIT</span>' : ''}</span>`;
+      if(l.id === editingLogId){
+        return `<div class="logrow editing">
+          ${name}
+          <span class="lright">
+            <input type="time" id="logEditStart" value="${hhmmOf(l.start||l.ts)}" onkeydown="logEditKeydown(event,'${key}','${l.id}')" oninput="autoAdvanceTime(event,'logEditEnd')"/>
+            <span class="arrow">→</span>
+            <input type="time" id="logEditEnd" value="${hhmmOf(l.end||l.ts)}" onkeydown="logEditKeydown(event,'${key}','${l.id}')"/>
+            <button class="small primary" onclick="saveLogEdit('${key}','${l.id}')">Save</button>
+            <button class="small" onclick="cancelLogEdit()">Cancel</button>
+          </span>
+        </div>`;
+      }
+      const editable = l.start && l.end && !l.icsKey;
+      return `<div class="logrow">
+        ${name}
         <span class="lright">
-          <span class="ltime">${l.start && l.end ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)}</span>
+          <span class="ltime ${editable?'editable':''}" ${editable ? `onclick="startLogEdit('${l.id}')" title="Click to fix the times"` : ''}>${l.start && l.end ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)}</span>
           <span class="ldur">${l.actualMins!=null ? l.actualMins+'m' : ''}</span>
           <button class="xbtn" onclick="removeLogEntry('${key}','${l.id}')" title="Remove this entry" aria-label="Remove this entry">×</button>
         </span>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   updateTimerDisplays();
