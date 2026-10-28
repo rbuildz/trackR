@@ -86,6 +86,19 @@
   .crit.met .ck{color:var(--green);}
   .crit.locked{color:var(--gold);}
   .crit.penalty{color:var(--red);}
+  .rs-next{flex-basis:100%;color:var(--gold);}
+  .rs-next b{font-weight:500;}
+
+  /* ---- Long-running timer check ---- */
+  .timer-check{
+    display:none;flex-wrap:wrap;align-items:center;gap:8px;margin:-14px 0 22px;padding:10px 12px;
+    border:1px solid var(--gold-dim);border-radius:3px;
+    font-family:'DM Mono',monospace;font-size:11px;color:var(--text);
+  }
+  .timer-check.show{display:flex;}
+  .timer-check .tc-msg{flex:1 1 220px;}
+  .timer-check input[type=time]{width:110px;}
+  .backup-age.stale{color:var(--red);}
   .daybar.past{border-bottom-color:var(--gold-dim);}
   .daybar .navbtn{padding:10px 10px;flex-shrink:0;}
   .daypills{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;}
@@ -390,6 +403,7 @@
     <button class="primary" id="backToToday" onclick="selectDay(todayKey())">Today</button>
   </div>
   <div class="rarity-strip" id="rarityStrip"></div>
+  <div class="timer-check" id="timerCheck"></div>
 
   <section class="block" style="border-top:none;padding-top:0;">
     <div class="addbar">
@@ -529,6 +543,7 @@
         <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)"/>
       </div>
     </div>
+    <div id="backupAge" class="hint backup-age" style="margin:-6px 0 10px;text-align:right;"></div>
     <div id="weekRarityAvg" class="rarity-week-avg"></div>
     <div class="hint" style="margin-bottom:10px;">Click a day to view it or log to it · keys: ← → change day, T today, N new quest</div>
     <div id="weekHistory"></div>
@@ -881,6 +896,7 @@ function startClock(){
   const tick = () => {
     document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
     updateTimerDisplays();
+    renderTimerCheck();
     if(performRollover()){ save(); render(); }
   };
   tick();
@@ -1425,10 +1441,10 @@ function startTimer(kind, questId){
   save(); render();
 }
 
-function stopTimer(){
+function stopTimer(endOverride){
   const t = state.timer;
   if(!t) return;
-  const start = new Date(t.start), end = new Date();
+  const start = new Date(t.start), end = endOverride || new Date();
   const mins = Math.round((end-start)/60000);
   if(mins < 1){
     state.timer = null;
@@ -1446,6 +1462,58 @@ function stopTimer(){
       q.totalMins = (q.totalMins||0) + mins;
     }
   });
+}
+
+// A timer left running this long gets a "still going?" check, so a
+// forgotten one doesn't quietly log a 9-hour session. Saying "keep going"
+// pushes the next check another TIMER_CHECK_MINS out.
+const TIMER_CHECK_MINS = 180;
+
+function timerNeedsCheck(){
+  const t = state.timer;
+  if(!t) return false;
+  return Date.now() - new Date(t.checkedAt || t.start) >= TIMER_CHECK_MINS*60000;
+}
+
+/** Shows/hides the check banner. Called every tick; leaves an open banner
+ *  alone so a half-typed stop time isn't wiped. */
+function renderTimerCheck(){
+  const el = document.getElementById('timerCheck');
+  if(!timerNeedsCheck()){ el.classList.remove('show'); el.innerHTML = ''; return; }
+  if(el.classList.contains('show')) return;
+  const t = state.timer;
+  const q = t.kind==='quest' ? state.quests.find(q=>q.id===t.questId) : null;
+  const name = t.kind==='rot' ? 'rot' : (q ? `"${escapeHtml(q.title)}"` : 'quest');
+  const start = new Date(t.start);
+  const guess = new Date(start.getTime() + 60*60000);
+  el.innerHTML = `
+    <span class="tc-msg">Your ${name} timer has been running since ${fmtTime(start.toISOString())} (<span class="timer-elapsed">${timerElapsedText()}</span>). Still going?</span>
+    <button onclick="keepTimer()">Still going</button>
+    <button onclick="stopTimer()">Stop now</button>
+    <span class="hint">or it ended at</span>
+    <input type="time" id="timerCheckEnd" value="${hhmmOf(guess)}" onkeydown="if(event.key==='Enter') stopTimerAt()"/>
+    <button class="primary" onclick="stopTimerAt()">Log until then</button>`;
+  el.classList.add('show');
+}
+
+function keepTimer(){
+  if(!state.timer) return;
+  state.timer.checkedAt = new Date().toISOString();
+  save(); render();
+}
+
+/** Stops the timer at the time typed into the check banner (the first such
+ *  clock time after the timer started), instead of now. */
+function stopTimerAt(){
+  const t = state.timer, input = document.getElementById('timerCheckEnd');
+  if(!t || !input.value){ flagFields(['timerCheckEnd']); return; }
+  const start = new Date(t.start);
+  const [h, m] = input.value.split(':').map(Number);
+  const end = new Date(start);
+  end.setHours(h, m, 0, 0);
+  while(end <= start) end.setDate(end.getDate()+1);
+  if(end > new Date()){ flagFields(['timerCheckEnd']); showUndoToast("That time hasn't happened yet"); return; }
+  stopTimer(end);
 }
 
 function timerElapsedText(){
@@ -2437,21 +2505,77 @@ function rarityForScore(score){
 function dayRarity(key){
   const stats = dayStats(key);
   const sleepMet = state.goals.sleepHours > 0 && stats.sleep >= state.goals.sleepHours;
-  const rotMet = stats.rot <= state.goals.rotMins;
+  // Staying under the rot limit only counts on a day you actually tracked —
+  // otherwise a blank day would get +2 for doing nothing.
+  const active = dayHasActivity(key);
+  const rotUnder = stats.rot <= state.goals.rotMins;
+  const rotMet = rotUnder && active;
   const questCount = state.completedCounts[key] || 0;
   const questPoints = Math.min(questCount, 4);
-  const score = (sleepMet?2:0) + (rotMet?2:0) + questPoints;
-
   const fitnessMins = fitnessMinsFor(key);
   const fitnessMet = fitnessMins >= state.goals.fitnessMins;
+  const classes = classStatusFor(key);
+
+  const t = tierFor({ sleepMet, rotMet, questCount, fitnessMet, missed: classes.missed });
+  return { rarity: RARITY_TIERS[t.tier], tier: t.tier, baseTier: t.baseTier, score: t.score, sleepMet, rotMet, rotUnder, active, questCount, questPoints, fitnessMins, fitnessMet, fitnessCapped: t.fitnessCapped, classes };
+}
+
+/** The tier rules on their own, so the next-tier hint can try "what ifs". */
+function tierFor({ sleepMet, rotMet, questCount, fitnessMet, missed }){
+  const score = (sleepMet?2:0) + (rotMet?2:0) + Math.min(questCount, 4);
   const baseTier = RARITY_TIERS.indexOf(rarityForScore(score));
   const fitnessCapped = !fitnessMet && baseTier >= EPIC_TIER;
-  let tier = fitnessCapped ? EPIC_TIER-1 : baseTier;
+  const tier = Math.max(0, (fitnessCapped ? EPIC_TIER-1 : baseTier) - missed);
+  return { score, baseTier, fitnessCapped, tier };
+}
 
-  const classes = classStatusFor(key);
-  tier = Math.max(0, tier - classes.missed);
+/** True once anything at all is logged for the day. */
+function dayHasActivity(key){
+  return (state.logs[key]||[]).length > 0 || sleepHoursFor(key) > 0
+    || (state.rotting[key]||0) > 0 || (state.completedCounts[key]||0) > 0;
+}
 
-  return { rarity: RARITY_TIERS[tier], tier, baseTier, score, sleepMet, rotMet, questCount, questPoints, fitnessMins, fitnessMet, fitnessCapped, classes };
+/**
+ * The cheapest set of things still doable on this day that lifts it at
+ * least one tier (and the tier it lands on), e.g. "+1 quest" or "sleep goal + 15 fitness min". Tries every mix of
+ * sleep / fitness / extra quests (rot can only go up, and a missed class is
+ * fixed only by marking it cancelled, so neither is an option). Returns
+ * null at Legendary, or {none:true} when nothing left can raise it.
+ */
+function nextTierHint(key, r){
+  if(r.tier >= RARITY_TIERS.length-1) return null;
+  const target = r.tier + 1;
+  const sleepNeed = Math.max(0, state.goals.sleepHours - sleepHoursFor(key));
+  const fitNeed = Math.max(0, state.goals.fitnessMins - r.fitnessMins);
+  let best = null;
+  for(const s of r.sleepMet || !state.goals.sleepHours ? [0] : [0,1]){
+    for(const f of r.fitnessMet ? [0] : [0,1]){
+      for(let q = 0; q <= 4 - r.questPoints; q++){
+        const cost = s + f + q;
+        if(!cost) continue;
+        const t = tierFor({
+          sleepMet: r.sleepMet || !!s,
+          rotMet: r.rotUnder, // doing anything makes the day count as tracked
+          questCount: r.questCount + q,
+          fitnessMet: r.fitnessMet || !!f,
+          missed: r.classes.missed
+        }).tier;
+        if(t >= target && (!best || cost < best.cost || (cost === best.cost && t > best.t))) best = { cost, s, f, q, t };
+      }
+    }
+  }
+  // An untracked day that's under the rot limit goes up just by logging something.
+  if(!r.active && r.rotUnder && !best){
+    const t = tierFor({ sleepMet:r.sleepMet, rotMet:true, questCount:r.questCount, fitnessMet:r.fitnessMet, missed:r.classes.missed }).tier;
+    if(t >= target) best = { cost:1, s:0, f:0, q:0, t, any:true };
+  }
+  if(!best) return { none:true };
+  const parts = [];
+  if(best.any) parts.push('log anything');
+  if(best.s) parts.push(`sleep goal (+${Math.round(sleepNeed*10)/10}h)`);
+  if(best.f) parts.push(`${fitNeed} more fitness min`);
+  if(best.q) parts.push(`${best.q} more quest${best.q===1?'':'s'}`);
+  return { text: parts.join(' + '), rarity: RARITY_TIERS[best.t] };
 }
 
 /** One-line plain-English explanation of a day's rarity, for tooltips. */
@@ -2459,7 +2583,7 @@ function rarityExplain(r){
   const parts = [
     `score ${r.score}/8`,
     `sleep goal ${r.sleepMet?'met':'not met'}`,
-    `rotting limit ${r.rotMet?'met':'not met'}`,
+    `rotting limit ${r.rotMet?'met':(r.rotUnder?'not counted (nothing logged)':'not met')}`,
     `${r.questCount} quest${r.questCount===1?'':'s'} completed`,
     `${r.fitnessMins}/${state.goals.fitnessMins} min fitness${r.fitnessCapped?' (capped at Rare)':''}`
   ];
@@ -2476,7 +2600,9 @@ function renderRarityStrip(key){
   const items = [
     `<span class="rs-tier" style="color:${r.rarity.color}" title="${escapeHtml(rarityExplain(r))}">${swordSVG(r.rarity.color, 12, 18)} ${r.rarity.name}</span>`,
     crit(r.sleepMet?'met':'', r.sleepMet?'✓':'○', `Sleep ${sleepHoursFor(key)}/${state.goals.sleepHours}h`, '+2 when you hit your sleep goal'),
-    crit(r.rotMet?'met':'penalty', r.rotMet?'✓':'×', `Rot ${state.rotting[key]||0}/${state.goals.rotMins}m`, '+2 while rotting stays under your limit'),
+    r.rotMet || !r.rotUnder
+      ? crit(r.rotMet?'met':'penalty', r.rotMet?'✓':'×', `Rot ${state.rotting[key]||0}/${state.goals.rotMins}m`, '+2 while rotting stays under your limit')
+      : crit('', '○', `Rot ${state.rotting[key]||0}/${state.goals.rotMins}m · log something first`, 'The rot limit only counts once the day has something logged'),
     crit(r.questPoints>=4?'met':'', r.questPoints>=4?'✓':'○', `Quests ${Math.min(r.questCount,4)}/4`, '+1 per completed quest, up to 4'),
     crit(r.fitnessMet?'met':(r.fitnessCapped?'locked':''), r.fitnessMet?'✓':'○', `Fitness ${r.fitnessMins}/${goal}m${r.fitnessCapped?' · Epic locked':''}`, `Epic and Legendary need ${goal} min in a FIT category`)
   ];
@@ -2486,6 +2612,9 @@ function renderRarityStrip(key){
     else if(c.upcoming) items.push(crit('', '○', `Classes ${c.attended}/${c.total - c.excused} · ${c.upcoming} to go`));
     else items.push(crit('met', '✓', c.excused === c.total ? 'Classes cancelled' : `Classes ${c.attended}/${c.total - c.excused}`));
   }
+  const next = nextTierHint(key, r);
+  if(next && next.none) items.push(`<span class="rs-next" style="color:var(--text-mute)">Nothing left can raise this day${c.missed ? ' — a missed class can still be marked cancelled' : ''}</span>`);
+  else if(next) items.push(`<span class="rs-next">→ <b style="color:${next.rarity.color}">${next.rarity.name}</b>: ${escapeHtml(next.text)}</span>`);
   document.getElementById('rarityStrip').innerHTML = items.join('');
 }
 
@@ -2701,7 +2830,21 @@ function downloadText(filename, content, mimeType){
  *  goals, templates) as one JSON file — the only way data actually moves
  *  between browsers/devices, since localStorage never travels with the file. */
 function exportJSON(){
+  state.lastBackup = new Date().toISOString();
+  save();
   downloadText(`trackr-backup-${todayKey()}.json`, JSON.stringify(state, null, 2), 'application/json');
+  renderBackupAge();
+}
+
+/** "Last backup: 3 days ago" under the backup buttons — red once it's a week
+ *  old, since everything else lives only in this browser's storage. */
+function renderBackupAge(){
+  const el = document.getElementById('backupAge');
+  const last = state.lastBackup ? new Date(state.lastBackup) : null;
+  const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+  el.textContent = last == null ? 'No backup yet · your data only lives in this browser'
+    : `Last backup: ${days === 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago'}`;
+  el.classList.toggle('stale', last == null || days >= 7);
 }
 
 /** Restores a previously exported JSON backup, replacing all current data. */
@@ -2712,6 +2855,9 @@ function importJSON(e){
   reader.onload = () => {
     try{
       const parsed = JSON.parse(reader.result);
+      const looksLikeBackup = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        && typeof parsed.logs === 'object' && Array.isArray(parsed.quests);
+      if(!looksLikeBackup) throw new Error('not a trackR backup');
       const snapshot = JSON.stringify(state);
       state = Object.assign({ projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60 }, templates: [], completedCounts: {} }, parsed);
       normalizeState();
@@ -2769,6 +2915,8 @@ function render(){
   populateProjectSelect();
   renderDayBar();
   renderRarityStrip(key);
+  renderTimerCheck();
+  renderBackupAge();
   renderCategoryChips();
   renderHistory();
   renderCategoryBreakdown();
