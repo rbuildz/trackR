@@ -4,20 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rbuilds / trackR</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-16 -20 240 236'%3E%3Crect x='-16' y='-20' width='240' height='236' rx='36' fill='%23111111'/%3E%3Cg fill='%23B39B84'%3E%3Cpath d='M30 38 L78 32.5 L150.99 32.5 L50.35 105.3 Q111.6 138.15 178 180 Q106.4 147.85 29.65 106.7 L117.01 43.5 L78 43.5 Z'/%3E%3Cpath d='M80 -12 L85 16 L85 162 L80 208 L75 162 L75 16 Z'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="theme-color" content="#111111">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* ---- Design tokens (rbuilds palette) ---- */
+  /* ---- Design tokens (rbuilds palette — taken from the R mark: iridium
+     gold #B39B84 on #111111, with warm neutrals built around them) ---- */
   :root{
-    --bg:#0a0a0c;
-    --panel:#141416;
-    --panel-2:#1b1b1e;
-    --border:#2a2a2e;
-    --border-strong:#3a3a3f;
-    --text:#e8e6e1;
-    --text-mute:#8a8886;
-    --gold:#c9a961;
-    --gold-dim:#8a7643;
+    --bg:#111111;
+    --panel:#181716;
+    --panel-2:#1f1e1c;
+    --border:#2b2926;
+    --border-strong:#3d3a36;
+    --text:#ebe6df;
+    --text-mute:#8f8880;
+    --gold:#b39b84;
+    --gold-dim:#76675a;
     --green:#7fa88a;
     --red:#b06a54;
 
@@ -46,7 +49,7 @@
     padding-bottom:16px;
   }
   .brand{display:flex;align-items:center;gap:10px;}
-  .brand svg{width:26px;height:26px;}
+  .brand svg{width:40px;height:40px;flex-shrink:0;}
   .brand .word{
     font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;
     color:var(--text-mute);text-transform:uppercase;
@@ -119,7 +122,7 @@
     display:flex;gap:8px;flex-wrap:wrap;align-items:center;
   }
   .addbar input[type=text]{flex:1;min-width:180px;}
-  .addbar-hint{margin:8px 0 22px;}
+  .addbar-hint{margin:8px 0 16px;min-height:12px;}
   input[type=text], select, input[type=number], input[type=time]{
     background:var(--panel);border:1px solid var(--border);color:var(--text);
     font-family:'Outfit',sans-serif;font-size:14px;padding:10px 12px;border-radius:2px;
@@ -277,19 +280,61 @@
   .logrow.editing{flex-wrap:wrap;}
   .logrow.editing input[type=time]{padding:5px 6px;font-size:12px;width:104px;}
 
-  /* ---- Sleep + Rotting widget cards ---- */
+  /* ---- Health tiles (sleep, body weight, fitness) ---- */
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  .widgets{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
-  .widgets input[type=time]{width:108px !important;padding:8px 8px;font-size:13px;}
-  .widgets select{padding:8px 8px;font-size:13px;}
-  .widgetcard{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:16px;}
-  .widgetcard .wtitle{
-    font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
-    color:var(--text-mute);margin-bottom:12px;
+  .health{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+  .health{align-items:start;}
+  .tile-split{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
+  .health input[type=time]{width:108px;padding:7px 8px;font-size:13px;}
+  .health input[type=number]{padding:7px 8px;font-size:13px;}
+  .health select{padding:5px 8px;font-size:12px;}
+  .spark{display:block;width:100%;height:36px;margin-top:10px;}
+  .spark .spark-line{fill:none;stroke:var(--gold);stroke-width:1.5;vector-effect:non-scaling-stroke;}
+  .spark .spark-dot{fill:var(--gold);}
+  .spark .spark-sel{fill:var(--text);}
+  .muscles{display:flex;flex-wrap:wrap;gap:6px;}
+  .mchip{
+    display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font-size:11px;letter-spacing:0.5px;
+    text-transform:none;font-family:'Outfit',sans-serif;color:var(--text-mute);
   }
-  .bignum{font-family:'DM Serif Display',serif;font-size:32px;color:var(--gold);line-height:1;}
-  .bignum .unit{font-family:'DM Mono',monospace;font-size:13px;color:var(--text-mute);margin-left:6px;}
+  .mchip .mcount{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);}
+  .mchip.hit{color:var(--text);}
+  .mchip.hit .mcount{color:var(--gold);}
+  .mchip.on{border-color:var(--gold);color:var(--gold);background:var(--panel-2);}
+  .session .mtags{color:var(--gold);margin-left:4px;}
+  .crit.jump{cursor:pointer;}
+  .crit.jump:hover{color:var(--gold);}
+  .qtile{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:14px 16px;}
+  .qtile-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .wtitle{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-mute);}
+  .qtile-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold);line-height:1;white-space:nowrap;}
+  .qtile-val .unit{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);margin-left:4px;}
+  .qtile .meter{margin-top:10px;}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+
+  /* ---- Settings & data (folded away at the bottom) ---- */
+  .settings{border-top:1px solid var(--border);padding-top:18px;margin-bottom:32px;}
+  .settings summary{
+    cursor:pointer;list-style:none;font-family:'DM Serif Display',serif;font-size:18px;color:var(--text-mute);
+    display:flex;align-items:baseline;gap:10px;
+  }
+  .settings summary::-webkit-details-marker{display:none;}
+  .settings summary::before{content:'›';font-family:'DM Mono',monospace;font-size:14px;transition:transform 0.15s;display:inline-block;}
+  .settings[open] summary::before{transform:rotate(90deg);}
+  .settings summary:hover, .settings[open] summary{color:var(--text);}
+  .settings-note{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.5px;color:var(--red);}
+  .setgroup{margin-top:20px;}
+  .setgroup .goalrow{margin-top:8px;text-transform:none;font-size:11px;}
+  .setgroup .goalrow label{color:var(--text);min-width:120px;}
+  .sublabel-hint{text-transform:none;letter-spacing:0.5px;}
+
+  /* ---- Quest card icon buttons + collapsible "log time" row ---- */
+  .icon-btn{border:none;background:none;padding:0 3px;font-size:13px;line-height:1;color:var(--text-mute);letter-spacing:0;text-transform:none;}
+  .icon-btn:hover{color:var(--gold);}
+  .icon-btn.danger:hover{color:var(--red);}
+  .card-icons{display:flex;gap:2px;flex-shrink:0;opacity:0.5;transition:opacity 0.1s;}
+  .card:hover .card-icons, .card:focus-within .card-icons{opacity:1;}
+  .card-actions button.on{border-color:var(--gold-dim);color:var(--gold);}
   .quickbtns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;}
   .goalrow{display:flex;align-items:center;gap:6px;margin-top:12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);letter-spacing:0.5px;text-transform:uppercase;}
   .goalrow input{padding:5px 6px;font-size:11px;}
@@ -321,19 +366,22 @@
   }
   .undo-toast button{border-color:var(--gold-dim);color:var(--gold);padding:6px 12px;}
 
-  /* ---- Weekly history table (clickable day rows + averages) ---- */
+  /* ---- Weekly history table (clickable day rows + an averages footer) ---- */
+  .weekrow, .weekhead{grid-template-columns:22px minmax(90px,1.4fr) repeat(5, minmax(48px,1fr));}
   .weekrow{
-    display:grid;grid-template-columns:76px 50px 40px 50px 40px 45px 40px 45px 40px 36px;gap:6px;align-items:center;
-    font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);
+    display:grid;gap:8px;align-items:center;
+    font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);
     padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;
   }
+  .weekrow.weekfoot{cursor:default;border-bottom:none;border-top:1px solid var(--border-strong);margin-top:-1px;}
+  .weekrow.weekfoot .wlabel{color:var(--text-mute);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;}
   .weekrow:hover{color:var(--text);}
   .weekrow.today{color:var(--text);}
   .weekrow.selected{background:var(--panel-2);border-left:2px solid var(--gold);padding-left:6px;}
   .weekrow .wlabel{color:var(--text);font-family:'Outfit',sans-serif;font-size:12px;}
   .weekrow b{color:var(--gold);font-weight:500;}
   .weekhead{
-    display:grid;grid-template-columns:76px 50px 40px 50px 40px 45px 40px 45px 40px 36px;gap:6px;
+    display:grid;gap:8px;
     font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;
     color:var(--text-mute);padding-bottom:6px;border-bottom:1px solid var(--border-strong);
   }
@@ -370,10 +418,12 @@
   .tier-toast .check-mark{width:12px;text-align:center;flex-shrink:0;}
 
   /* ---- Responsive: narrow screens drop secondary columns ---- */
-  @media(max-width:640px){#qb{padding:20px 16px 64px;} .board{grid-template-columns:1fr;} .grid2, .widgets{grid-template-columns:1fr;} .weekrow,.weekhead{grid-template-columns:50px 1fr 1fr 30px;font-size:9px;}
+  @media(max-width:640px){#qb{padding:20px 16px 64px;} .board{grid-template-columns:1fr;} .grid2, .health{grid-template-columns:1fr;} .card-icons{opacity:1;}
+    .weekrow,.weekhead{grid-template-columns:18px 1fr repeat(3, 52px);font-size:10px;gap:6px;}
     .date{text-align:left;}
-    .weekrow span:nth-child(3), .weekrow span:nth-child(5), .weekrow span:nth-child(6), .weekrow span:nth-child(7), .weekrow span:nth-child(8), .weekrow span:nth-child(9),
-    .weekhead span:nth-child(3), .weekhead span:nth-child(5), .weekhead span:nth-child(6), .weekhead span:nth-child(7), .weekhead span:nth-child(8), .weekhead span:nth-child(9){display:none;}}
+    /* phones keep Logged, Sleep, Fitness; drop Done + Rotting */
+    .weekrow span:nth-child(4), .weekrow span:nth-child(7),
+    .weekhead span:nth-child(4), .weekhead span:nth-child(7){display:none;}}
 </style>
 </head>
 <body>
@@ -384,8 +434,9 @@
 
   <div class="header">
     <div class="brand">
-      <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M50 15 L20 55 L35 55 L15 85 L50 65 L85 85 L65 55 L80 55 Z" stroke="var(--gold)"/>
+      <svg viewBox="-6 -16 220 228" fill="var(--gold)" role="img" aria-label="rbuilds">
+        <path d="M30 38 L78 32.5 L150.99 32.5 L50.35 105.3 Q111.6 138.15 178 180 Q106.4 147.85 29.65 106.7 L117.01 43.5 L78 43.5 Z"/>
+        <path d="M80 -12 L85 16 L85 162 L80 208 L75 162 L75 16 Z"/>
       </svg>
       <div>
         <div class="word">rbuilds / trackR</div>
@@ -405,15 +456,16 @@
   <div class="rarity-strip" id="rarityStrip"></div>
   <div class="timer-check" id="timerCheck"></div>
 
+  <!-- ===== LOG: everything you do day-to-day, in the order you reach for it ===== -->
   <section class="block" style="border-top:none;padding-top:0;">
     <div class="addbar">
-      <input type="text" id="newTitle" placeholder="What needs doing?" />
-      <select id="newProject"></select>
-      <input type="time" id="newStart" style="width:118px;" oninput="autoAdvanceTime(event,'newEnd'); updateAddButton()" onkeydown="handleTimeBackspace(event)" title="Optional — fill both to log it as already done"/>
+      <input type="text" id="newTitle" placeholder="Add a quest…" />
+      <select id="newProject" title="Category"></select>
+      <input type="time" id="newStart" style="width:118px;" oninput="autoAdvanceTime(event,'newEnd'); updateAddButton()" onkeydown="handleTimeBackspace(event)" title="Already did it? Add when it started"/>
       <span class="arrow">→</span>
-      <input type="time" id="newEnd" style="width:118px;" oninput="updateAddButton()" onkeydown="endFieldKeydown(event,'newStart',addQuest)" title="Optional — leave empty to end now (today only)"/>
-      <label class="checklabel"><input type="checkbox" id="newRecurring"/> repeat daily</label>
-      <button class="primary" id="addQuestBtn" onclick="addQuest()">Add quest</button>
+      <input type="time" id="newEnd" style="width:118px;" oninput="updateAddButton()" onkeydown="endFieldKeydown(event,'newStart',addQuest)" title="Leave empty to end now (today only)"/>
+      <label class="checklabel"><input type="checkbox" id="newRecurring"/> daily</label>
+      <button class="primary" id="addQuestBtn" onclick="addQuest()">Add</button>
     </div>
     <div class="hint addbar-hint" id="addHint"></div>
 
@@ -423,95 +475,21 @@
         <div id="col-todo"></div>
       </div>
       <div class="col" id="col-completed-wrap" ondragover="event.preventDefault(); this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDrop(event,'completed')">
-        <div class="col-title"><span>Completed <span class="col-day" id="completedDayLabel"></span></span> <span id="cnt-completed">0</span></div>
+        <div class="col-title"><span>Done <span class="col-day" id="completedDayLabel"></span></span> <span id="cnt-completed">0</span></div>
         <div id="col-completed"></div>
       </div>
     </div>
   </section>
 
-  <section class="block">
-    <div class="widgets">
-      <div class="widgetcard">
-        <div class="wtitle" id="sleepTitle">Sleep last night</div>
-        <div class="bignum" id="sleepDisplay">0<span class="unit">hrs</span></div>
-        <div id="sleepRangeText" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-top:4px;min-height:12px;"></div>
-        <div class="meter"><div class="meter-fill" id="sleepMeter"></div></div>
-        <div class="meter-label" id="sleepMeterLabel"></div>
-        <div class="row">
-          <input type="time" id="bedInput" style="width:120px;" oninput="autoAdvanceTime(event,'wakeInput')" onkeydown="handleTimeBackspace(event)" title="Bedtime"/>
-          <span class="arrow">→</span>
-          <input type="time" id="wakeInput" style="width:120px;" onkeydown="endFieldKeydown(event,'bedInput',logSleep)" title="Wake time — leave empty for now (today only)"/>
-          <button onclick="logSleep()">Log sleep</button>
-        </div>
-        <div class="goalrow">
-          <label for="sleepGoalInput">Goal</label>
-          <input type="number" id="sleepGoalInput" min="0" max="24" step="0.5" style="width:56px;" onchange="setSleepGoal(this.value)"/>
-          <span>hrs</span>
-        </div>
-      </div>
-      <div class="widgetcard">
-        <div class="wtitle" id="rotTitle">Time spent rotting</div>
-        <div class="bignum" id="rotDisplay">0<span class="unit">min</span></div>
-        <div class="meter"><div class="meter-fill" id="rotMeter"></div></div>
-        <div class="meter-label" id="rotMeterLabel"></div>
-        <div class="row" id="rotTimerRow"></div>
-        <div class="row">
-          <input type="time" id="rotManualStart" style="width:120px;" oninput="autoAdvanceTime(event,'rotManualEnd')" onkeydown="handleTimeBackspace(event)" title="Start time"/>
-          <span class="arrow">→</span>
-          <input type="time" id="rotManualEnd" style="width:120px;" onkeydown="endFieldKeydown(event,'rotManualStart',logRotManual)" title="End time — leave empty for now (today only)"/>
-          <button onclick="logRotManual()">Log rot</button>
-        </div>
-        <div class="quickbtns">
-          <span class="hint" id="rotQuickHint">quick add</span>
-          <button class="small" onclick="quickRot(15)">+15m</button>
-          <button class="small" onclick="quickRot(30)">+30m</button>
-          <button class="small" onclick="quickRot(60)">+1h</button>
-        </div>
-        <div class="session-list" id="rotSessions"></div>
-        <div class="goalrow">
-          <label for="rotGoalInput">Limit</label>
-          <input type="number" id="rotGoalInput" min="0" style="width:56px;" onchange="setRotGoal(this.value)"/>
-          <span>min</span>
-        </div>
-      </div>
-      <div class="widgetcard">
-        <div class="wtitle" id="fitTitle">Fitness today</div>
-        <div class="bignum" id="fitDisplay">0<span class="unit">min</span></div>
-        <div class="meter"><div class="meter-fill" id="fitMeter"></div></div>
-        <div class="meter-label" id="fitMeterLabel"></div>
-        <div class="row">
-          <select id="fitCategory" title="Which fitness category to log under"></select>
-        </div>
-        <div class="row">
-          <input type="time" id="fitStart" style="width:120px;" oninput="autoAdvanceTime(event,'fitEnd')" onkeydown="handleTimeBackspace(event)" title="Start time"/>
-          <span class="arrow">→</span>
-          <input type="time" id="fitEnd" style="width:120px;" onkeydown="endFieldKeydown(event,'fitStart',logFitManual)" title="End time — leave empty for now (today only)"/>
-          <button onclick="logFitManual()">Log</button>
-        </div>
-        <div class="quickbtns">
-          <span class="hint" id="fitQuickHint">quick add</span>
-          <button class="small" onclick="quickFit(15)">+15m</button>
-          <button class="small" onclick="quickFit(30)">+30m</button>
-          <button class="small" onclick="quickFit(60)">+1h</button>
-        </div>
-        <div class="session-list" id="fitSessions"></div>
-        <div class="goalrow">
-          <label for="fitGoalInput">Epic needs</label>
-          <input type="number" id="fitGoalInput" min="0" style="width:56px;" onchange="setFitGoal(this.value)"/>
-          <span>min</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
+  <!-- ===== REVIEW: where the day went, then the week ===== -->
   <section class="block">
     <div class="section-head">
       <h2 class="section-title" id="dayGoneTitle" style="margin:0;">Where today went</h2>
       <div class="stats">
-        <span><b id="statCleared">0</b> sessions logged</span>
         <span><b id="statMins">0</b>m logged</span>
+        <span><b id="statCleared">0</b> sessions</span>
         <span><b id="statSleep">0</b>h sleep</span>
-        <span><b id="statRot">0</b>m rotted</span>
+        <span><b id="statRot">0</b>m rotting</span>
       </div>
     </div>
     <div class="clockrow" id="clockRow">
@@ -526,57 +504,145 @@
     </div>
     <div id="blockTooltip" class="block-tooltip"></div>
     <div id="icsDayList"></div>
-    <div class="sublabel">Timeline</div>
+    <div class="sublabel">Timeline <span class="sublabel-hint">· click a time to fix it</span></div>
     <div id="logrows"></div>
-    <div style="margin-top:14px;">
-      <button class="small" onclick="clearSelectedDay()" id="resetDayBtn">Reset this day</button>
-    </div>
   </section>
 
   <section class="block">
     <div class="section-head">
       <h2 class="section-title" style="margin:0;">This week</h2>
-      <div class="row" style="margin-top:0;">
-        <button onclick="exportLog()">Export log (.txt)</button>
-        <button onclick="exportJSON()">Backup (.json)</button>
-        <button onclick="document.getElementById('importFile').click()">Restore backup</button>
-        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)"/>
-      </div>
+      <div id="weekRarityAvg" class="rarity-week-avg" style="margin:0;"></div>
     </div>
-    <div id="backupAge" class="hint backup-age" style="margin:-6px 0 10px;text-align:right;"></div>
-    <div id="weekRarityAvg" class="rarity-week-avg"></div>
-    <div class="hint" style="margin-bottom:10px;">Click a day to view it or log to it · keys: ← → change day, T today, N new quest</div>
+    <div class="hint" style="margin-bottom:10px;">Click a day to open it</div>
     <div id="weekHistory"></div>
     <h2 class="section-title" style="font-size:14px;margin-top:22px;">Last 30 days</h2>
     <div id="monthGrid" class="month-grid"></div>
-    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Time by category (7 days)</h2>
+    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Time by category · 7 days</h2>
     <div id="categoryBreakdown"></div>
   </section>
 
-  <section class="block">
-    <h2 class="section-title" style="font-size:14px;">Calendar import (.ics)</h2>
-    <div id="icsStatus" class="hint" style="font-size:11px;margin-bottom:10px;"></div>
-    <div class="row" style="margin-top:0;">
-      <button onclick="document.getElementById('icsFile').click()">Import .ics file</button>
-      <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none" onchange="importICS(event)"/>
-      <label class="checklabel"><input type="checkbox" id="icsShowToggle" checked onchange="onICSToggle(this.checked)"/> show on clocks</label>
-      <label class="checklabel" for="icsCategory">log attended as</label>
-      <select id="icsCategory" onchange="setICSCategory(this.value)"></select>
-      <button onclick="clearICS()">Clear imported events</button>
+  <!-- ===== HEALTH: sleep, body weight, workouts ===== -->
+  <section class="block" id="health">
+    <div class="section-head">
+      <h2 class="section-title" id="healthTitle" style="margin:0;">Health</h2>
+    </div>
+    <div class="health">
+      <div class="qtile">
+        <div class="qtile-head">
+          <span class="wtitle" id="sleepTitle">Sleep · last night</span>
+          <span class="qtile-val" id="sleepDisplay"></span>
+        </div>
+        <div class="meter"><div class="meter-fill" id="sleepMeter"></div></div>
+        <div class="meter-label" id="sleepMeterLabel"></div>
+        <div class="row">
+          <input type="time" id="bedInput" oninput="autoAdvanceTime(event,'wakeInput')" onkeydown="handleTimeBackspace(event)" title="Went to bed"/>
+          <span class="arrow">→</span>
+          <input type="time" id="wakeInput" onkeydown="endFieldKeydown(event,'bedInput',logSleep)" title="Woke up — leave empty for now (today only)"/>
+          <button class="primary" id="logSleepBtn" onclick="logSleep()">Log</button>
+        </div>
+      </div>
+
+      <!-- Fitness + body weight share one tile: one place for "the body" -->
+      <div class="qtile">
+        <div class="qtile-head">
+          <span class="wtitle" id="fitTitle">Fitness · today</span>
+          <span class="qtile-val" id="fitDisplay"></span>
+        </div>
+        <div class="meter"><div class="meter-fill" id="fitMeter"></div></div>
+        <div class="meter-label" id="fitMeterLabel"></div>
+        <div class="sublabel" style="margin-top:14px;">What you trained <span class="sublabel-hint">· number = times this week</span></div>
+        <div class="muscles" id="muscleChips"></div>
+        <div class="row">
+          <select id="fitCategory" title="Which fitness category to log under"></select>
+          <input type="time" id="fitStart" oninput="autoAdvanceTime(event,'fitEnd')" onkeydown="handleTimeBackspace(event)" title="Started"/>
+          <span class="arrow">→</span>
+          <input type="time" id="fitEnd" onkeydown="endFieldKeydown(event,'fitStart',logFitManual)" title="Finished — leave empty for now (today only)"/>
+          <button class="primary" onclick="logFitManual()">Log</button>
+        </div>
+        <div class="session-list" id="fitSessions"></div>
+
+        <div class="tile-split">
+          <div class="qtile-head">
+            <span class="wtitle" id="weightTitle">Body weight</span>
+            <span class="qtile-val" id="weightDisplay"></span>
+          </div>
+          <svg class="spark" id="weightSpark" viewBox="0 0 200 36" preserveAspectRatio="none"></svg>
+          <div class="meter-label" id="weightLabel"></div>
+          <div class="row">
+            <input type="number" id="weightInput" step="0.1" min="0" style="width:110px;" onkeydown="if(event.key==='Enter') logWeight()" title="Weight"/>
+            <span class="hint" id="weightUnitLabel">lb</span>
+            <button class="primary" id="logWeightBtn" onclick="logWeight()">Log</button>
+            <button class="xbtn" id="clearWeightBtn" onclick="clearWeight()" title="Remove this day's weight" aria-label="Remove this day's weight">×</button>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="block">
-    <h2 class="section-title" style="font-size:14px;">Categories</h2>
-    <div class="categories" id="categoryChips"></div>
-    <div class="catform">
-      <input type="text" id="newCatName" placeholder="New category name" style="width:180px;"/>
-      <input type="color" id="newCatColor" value="#c9a961"/>
-      <label class="checklabel"><input type="checkbox" id="newCatFitness"/> fitness</label>
-      <button onclick="addCategory()">Add category</button>
+  <!-- ===== SETUP: things you set once, folded away ===== -->
+  <details class="settings" id="settings" ontoggle="rememberSettingsOpen(this.open)">
+    <summary>Settings &amp; data <span id="settingsNote" class="settings-note"></span></summary>
+
+    <div class="setgroup">
+      <div class="sublabel">Goals</div>
+      <div class="goalrow">
+        <label for="sleepGoalInput">Sleep goal</label>
+        <input type="number" id="sleepGoalInput" min="0" max="24" step="0.5" style="width:60px;" onchange="setSleepGoal(this.value)"/>
+        <span>hrs · +2 toward rarity</span>
+      </div>
+      <div class="goalrow">
+        <label for="fitGoalInput">Fitness for Epic</label>
+        <input type="number" id="fitGoalInput" min="0" style="width:60px;" onchange="setFitGoal(this.value)"/>
+        <span>min in a FIT category, needed for Epic &amp; Legendary</span>
+      </div>
+      <div class="goalrow">
+        <label for="weightUnitSelect">Weight unit</label>
+        <select id="weightUnitSelect" onchange="setWeightUnit(this.value)" style="padding:5px 8px;font-size:11px;">
+          <option value="lb">lb</option>
+          <option value="kg">kg</option>
+        </select>
+        <span>switching converts what you've logged</span>
+      </div>
     </div>
-    <div class="hint" style="margin-top:8px;">Tap FIT on a category to count its time toward the fitness goal.</div>
-  </section>
+
+    <div class="setgroup">
+      <div class="sublabel">Categories <span class="sublabel-hint">· FIT = counts as fitness</span></div>
+      <div class="categories" id="categoryChips"></div>
+      <div class="catform">
+        <input type="text" id="newCatName" placeholder="New category" style="width:180px;" onkeydown="if(event.key==='Enter') addCategory()"/>
+        <input type="color" id="newCatColor" value="#b39b84"/>
+        <label class="checklabel"><input type="checkbox" id="newCatFitness"/> fitness</label>
+        <button onclick="addCategory()">Add</button>
+      </div>
+    </div>
+
+    <div class="setgroup">
+      <div class="sublabel">Class calendar (.ics)</div>
+      <div id="icsStatus" class="hint" style="font-size:11px;margin-bottom:10px;"></div>
+      <div class="row" style="margin-top:0;">
+        <button onclick="document.getElementById('icsFile').click()">Import .ics</button>
+        <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none" onchange="importICS(event)"/>
+        <label class="checklabel"><input type="checkbox" id="icsShowToggle" checked onchange="onICSToggle(this.checked)"/> show on clocks</label>
+        <label class="checklabel" for="icsCategory">log attended as</label>
+        <select id="icsCategory" onchange="setICSCategory(this.value)"></select>
+        <button onclick="clearICS()">Remove calendar</button>
+      </div>
+    </div>
+
+    <div class="setgroup">
+      <div class="sublabel">Your data</div>
+      <div id="backupAge" class="hint backup-age" style="margin-bottom:10px;"></div>
+      <div class="row" style="margin-top:0;">
+        <button class="primary" onclick="exportJSON()">Back up (.json)</button>
+        <button onclick="document.getElementById('importFile').click()">Restore backup</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)"/>
+        <button onclick="exportLog()">Export week (.txt)</button>
+        <button onclick="clearSelectedDay()" id="resetDayBtn">Clear this day</button>
+      </div>
+    </div>
+
+    <div class="hint" style="margin-top:18px;">Keys: ← → change day · T today · N or / new quest</div>
+  </details>
 
 </div>
 </div>
@@ -596,8 +662,9 @@
  *   quests     – {id, title, project, status: 'todo'|'completed', totalMins, completedAt, completedDay, templateId, icsKey}
  *   logs[day]  – array of logged sessions for that day: {id, title, project, actualMins, start, end, ts, questId, icsKey}
  *   sleep[day] – {bed, wake, hours} for that day's sleep entry
- *   rotting[day] – total rotting minutes logged that day
- *   goals      – {sleepHours, rotMins} target values used to color the widgets
+ *   rotting[day] – legacy rotting total (Rotting is a plain, unscored category
+ *                  now; dayStats() sums its log entries instead)
+ *   goals      – {sleepHours, fitnessMins} targets (rotMins is legacy, unused)
  *   templates  – recurring quest definitions {id, title, project}; a fresh
  *                "to do" instance is (re-)created from each template whenever
  *                none is currently outstanding — see ensureRecurringQuests()
@@ -606,6 +673,8 @@
  *   icsExcused – {icsKey: true} for class occurrences marked cancelled
  *   icsSince   – first day missed classes count against rarity
  *   projects[].fitness – category counts toward goals.fitnessMins (the Epic gate)
+ *   logs[day][].muscles – muscle groups a fitness session trained, e.g. ['Legs','Core']
+ *   weight[day] – body weight logged that day, in goals.weightUnit ('lb'|'kg')
  *
  * The "day" a session belongs to is a *logical* day that rolls over at 5am,
  * not midnight — see todayKey()/logicalNow() below. This means working past
@@ -619,7 +688,7 @@
  *   1. Data model + persistence (state, load/save, normalizeState, rollover)
  *   2. Categories (projects) + undo/toast + day navigation
  *   3. Quests (To do / Completed board, editing, recurring templates, timers)
- *   4. Sleep + Rotting widgets (with goals/targets)
+ *   4. Sleep + Fitness widgets (with goals/targets)
  *   5. Clock visualization ("Where ___ went")
  *   6. Weekly history + category breakdown + text/JSON export
  *   7. Main render() + init
@@ -630,7 +699,7 @@
 // ---------------------------------------------------------------------------
 
 const DEFAULT_PROJECTS = [
-  {name:"OrbitArm", color:"#c9a961"},
+  {name:"OrbitArm", color:"#b39b84"},
   {name:"UAV Swap", color:"#7fa88a"},
   {name:"Toolbox", color:"#b06a54"},
   {name:"Coursework", color:"#8a7fd4"},
@@ -720,7 +789,7 @@ function nowHHMM(){
   return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 
-let state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60, fitnessMins: 30 }, templates: [], completedCounts: {}, icsEvents: [], icsShowOnClocks: true, timer: null, icsCategory: null, icsExcused: {} };
+let state = { projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)), quests: [], logs: {}, sleep: {}, rotting: {}, meals: {}, archivedKeys: [], goals: { sleepHours: 8, rotMins: 60, fitnessMins: 30 }, templates: [], completedCounts: {}, icsEvents: [], icsShowOnClocks: true, timer: null, icsCategory: null, icsExcused: {}, weight: {} };
 let selectedDayKey = null;
 let editingQuestId = null;
 let editingLogId = null;
@@ -742,6 +811,8 @@ function normalizeState(){
   if(typeof state.goals.rotMins !== 'number') state.goals.rotMins = 60;
   if(typeof state.goals.fitnessMins !== 'number') state.goals.fitnessMins = 30;
   if(typeof state.icsExcused !== 'object' || state.icsExcused === null) state.icsExcused = {};
+  if(typeof state.weight !== 'object' || state.weight === null) state.weight = {};
+  if(state.goals.weightUnit !== 'kg') state.goals.weightUnit = 'lb';
   if(!Array.isArray(state.templates)) state.templates = [];
   if(typeof state.bestStreak !== 'number') state.bestStreak = 0;
   if(!Array.isArray(state.icsEvents)) state.icsEvents = [];
@@ -885,6 +956,7 @@ function load(){
   selectedDayKey = state.lastSeen;
   save();
 
+  restoreSettingsOpen();
   render();
   startClock();
 }
@@ -912,12 +984,12 @@ function save(){
 
 function colorFor(project){
   const p = state.projects.find(p=>p.name===project);
-  return p ? p.color : '#c9a961';
+  return p ? p.color : '#b39b84';
 }
 
-/** Categories you can file quests under (Sleep/Rotting have their own widgets). */
+/** Categories you can file quests under (Sleep has its own widget). */
 function loggableProjects(){
-  return state.projects.filter(p=>p.name!=='Rotting' && p.name!=='Sleep');
+  return state.projects.filter(p=>p.name!=='Sleep');
 }
 
 function populateProjectSelect(){
@@ -1118,11 +1190,11 @@ function removeCategory(idx){
  *  whether a time range is filled in, and explains what will happen. */
 function updateAddButton(){
   const hasTimes = document.getElementById('newStart').value || document.getElementById('newEnd').value;
-  document.getElementById('addQuestBtn').textContent = hasTimes ? 'Log & complete' : 'Add quest';
+  document.getElementById('addQuestBtn').textContent = hasTimes ? 'Log it' : 'Add';
   const where = isViewingToday() ? 'today' : dayLabel(selectedDayKey);
   document.getElementById('addHint').textContent = hasTimes
-    ? `Will log this session and mark it completed for ${where}.`
-    : `Optional: add a time range to log it as already done for ${where}.`;
+    ? `Logs it as done ${isViewingToday() ? 'today' : 'on '+where}.`
+    : `Already did it? Add the times and it goes straight to Done.`;
 }
 
 /** Adds a new quest in the "To do" column. If a time range is filled in, it
@@ -1156,7 +1228,7 @@ function addQuest(){
       const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
       state.quests.push({ id, title, project, status:'completed', totalMins: mins, completedAt: endDate.toISOString(), completedDay: key, templateId: null });
       addLog(key, { title, project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString(), questId:id });
-      state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
+      if(countsAsQuest(project)) state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
       if(templateId) ensureRecurringQuests();
     } else {
       state.quests.push({ id, title, project, status:'todo', totalMins:0, completedAt:null, templateId });
@@ -1219,6 +1291,17 @@ function editKeydown(e, id){
 // selected day — just like sleep. This does NOT complete the quest; it stays
 // in "To do" so you can log more sessions later (work, break, work again).
 // "Done" (or dragging to Completed) is what actually finishes it.
+// To-do cards keep their start/end fields folded away until asked for, so
+// the board reads as a list of quests rather than a wall of time inputs.
+const openTimeRows = new Set();
+
+function toggleTimeRow(id){
+  if(openTimeRows.has(id)) openTimeRows.delete(id); else openTimeRows.add(id);
+  render();
+  const start = document.getElementById('qstart-'+id);
+  if(start) start.focus();
+}
+
 function logQuestTime(id){
   const q = state.quests.find(q=>q.id===id);
   if(!q) return;
@@ -1228,6 +1311,7 @@ function logQuestTime(id){
   const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
   document.getElementById('qstart-'+id).value = '';
   document.getElementById('qend-'+id).value = '';
+  openTimeRows.delete(id);
 
   withUndo(`Logged ${mins}m · ${q.title}${key===todayKey() ? '' : ' → '+dayLabel(key)}`, () => {
     addLog(key, { title:q.title, project:q.project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString(), questId:q.id });
@@ -1268,8 +1352,14 @@ function completeQuest(id){
       live.completedAt = whenISO;
       live.completedDay = key;
     }
-    state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
+    if(countsAsQuest(live.project)) state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
   });
+}
+
+/** Whether completing a quest in this category earns a rarity point —
+ *  everything except Rotting, which is tracked but never rewarded. */
+function countsAsQuest(project){
+  return project !== 'Rotting';
 }
 
 /** Moves a completed quest back to To do. This fully reverses it: it
@@ -1286,7 +1376,7 @@ function uncompleteQuest(id){
     const live = state.quests.find(o=>o.id===id);
     const day = live.completedDay || (live.completedAt ? logicalKeyForDate(new Date(live.completedAt)) : null);
     // Attended classes never counted toward completions, so there's nothing to take back.
-    if(!live.icsKey && day && state.completedCounts[day]) state.completedCounts[day] = Math.max(0, state.completedCounts[day]-1);
+    if(!live.icsKey && countsAsQuest(live.project) && day && state.completedCounts[day]) state.completedCounts[day] = Math.max(0, state.completedCounts[day]-1);
     Object.keys(state.logs).forEach(dayKey=>{
       state.logs[dayKey] = state.logs[dayKey].filter(l => l.questId !== id);
     });
@@ -1418,14 +1508,15 @@ function saveLogEdit(key, id){
   });
 }
 
-/** Wipes everything logged for the selected day — sessions, sleep, and
- *  rotting — with an Undo in case it was a misclick. */
+/** Wipes everything logged for the selected day — sessions, sleep, weight
+ *  and rotting — with an Undo in case it was a misclick. */
 function clearSelectedDay(){
   const key = selectedDayKey;
   withUndo(`Reset ${dayLabel(key)}`, () => {
     state.logs[key] = [];
     delete state.sleep[key];
     delete state.rotting[key];
+    delete state.weight[key];
   });
 }
 
@@ -1541,12 +1632,6 @@ function setSleepGoal(val){
   save(); render();
 }
 
-/** Sets the rotting-minutes limit used to color the widget (see render()). */
-function setRotGoal(val){
-  state.goals.rotMins = parseInt(val) || 0;
-  save(); render();
-}
-
 // Sleep is tracked as bed→wake hours rather than raw minutes, since that's
 // the more natural unit to read at a glance.
 function computeSleepHours(bed, wake){
@@ -1582,6 +1667,55 @@ function sleepRange(bed, wake, key){
   return { bedDate, wakeDate, hours };
 }
 
+// Which day the bed/wake inputs were last filled for, so switching days
+// refills them but a re-render never clobbers what you're typing.
+let sleepInputsKey = null;
+
+/** Most recent night with times logged before `key` — your usual bed/wake. */
+function lastSleepTimes(key){
+  for(let i=1; i<=14; i++){
+    const s = state.sleep[keyMinusDays(key, i)];
+    if(s && s.bed && s.wake) return s;
+  }
+  return null;
+}
+
+/** Renders the sleep tile. The inputs come pre-filled — with the night
+ *  already logged, or else your last logged bed/wake — so a normal night
+ *  is a single tap on Log. */
+function renderSleepTile(key){
+  const entry = state.sleep[key];
+  const hours = sleepHoursFor(key);
+  const goal = state.goals.sleepHours;
+  const weekday = dayDate(key).toLocaleDateString([], {weekday:'short'});
+  const logged = entry && entry.bed && entry.wake;
+
+  document.getElementById('sleepTitle').textContent = isViewingToday() ? 'Sleep · last night' : `Sleep · night before ${weekday}`;
+  const val = document.getElementById('sleepDisplay');
+  val.innerHTML = hours ? `${hours}<span class="unit">h</span>` : '';
+  val.style.color = (goal && hours > 0 && hours < goal) ? 'var(--red)' : '';
+
+  const meter = document.getElementById('sleepMeter');
+  meter.style.width = goal ? Math.min(100, hours/goal*100)+'%' : '0%';
+  meter.classList.toggle('met', !!goal && hours >= goal);
+  meter.classList.toggle('over', !!goal && hours > 0 && hours < goal);
+
+  const usual = logged ? entry : lastSleepTimes(key);
+  const range = logged ? `${formatTime12(entry.bed)} → ${formatTime12(entry.wake)} · ` : '';
+  document.getElementById('sleepMeterLabel').textContent = !hours
+    ? (usual ? 'Not logged · filled in from your last night' : 'Not logged yet')
+    : range + (hours >= goal ? 'goal met' : `${Math.round((goal-hours)*10)/10}h short of ${goal}h`);
+
+  const bed = document.getElementById('bedInput'), wake = document.getElementById('wakeInput');
+  if(sleepInputsKey !== key || (!bed.value && !wake.value)){
+    bed.value = usual ? usual.bed : '';
+    wake.value = usual ? usual.wake : '';
+    sleepInputsKey = key;
+  }
+  document.getElementById('logSleepBtn').textContent = logged ? 'Update' : 'Log';
+  document.getElementById('sleepGoalInput').value = goal;
+}
+
 /** Logs the sleep that ended on the selected day's morning. */
 function logSleep(){
   const range = readRange('bedInput','wakeInput');
@@ -1603,52 +1737,13 @@ function logSleep(){
   });
 }
 
-/** Records one rotting session on a day (log entry + the day's running total). */
+/** Records one rotting session on a day (log entry + the day's running total).
+ *  Only reached by a rot timer started before rotting became a plain category. */
 function addRotSession(key, startDate, endDate){
   const mins = Math.round((endDate-startDate)/60000);
   state.rotting[key] = (state.rotting[key]||0) + mins;
   addLog(key, { title:`Rotted ${mins}m`, project:'Rotting', actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString() });
   return mins;
-}
-
-// Log a rotting session by typing its start/end time directly.
-function logRotManual(){
-  const range = readRange('rotManualStart','rotManualEnd');
-  if(!range) return;
-  const key = selectedDayKey;
-  const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
-  withUndo(`Logged ${mins}m rotting`, () => {
-    addRotSession(key, startDate, endDate);
-    document.getElementById('rotManualStart').value = '';
-    document.getElementById('rotManualEnd').value = '';
-  });
-}
-
-/** Works out the range for a quick-add chunk of `mins`: from the typed start
- *  time if there is one, otherwise ending right now (today only). Returns
- *  {startDate, endDate}, or null (after flagging the start field). */
-function quickRange(startId, mins){
-  const startVal = document.getElementById(startId).value;
-  if(startVal){
-    const startDate = parseTimeRange(startVal, '00:00', selectedDayKey).startDate;
-    return { startDate, endDate: new Date(startDate.getTime() + mins*60000) };
-  }
-  if(isViewingToday()){
-    const endDate = new Date();
-    return { startDate: new Date(endDate.getTime() - mins*60000), endDate };
-  }
-  flagFields([startId]);
-  showUndoToast('Pick a start time — quick add on a past day starts from it');
-  return null;
-}
-
-function quickRot(mins){
-  const range = quickRange('rotManualStart', mins);
-  if(!range) return;
-  withUndo(`Logged ${mins}m rotting`, () => {
-    addRotSession(selectedDayKey, range.startDate, range.endDate);
-    document.getElementById('rotManualStart').value = '';
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1675,13 +1770,132 @@ function setFitGoal(val){
 function addFitSession(key, startDate, endDate){
   const project = document.getElementById('fitCategory').value;
   const mins = Math.round((endDate-startDate)/60000);
-  addLog(key, { title: project, project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString() });
+  const muscles = MUSCLE_GROUPS.filter(m => pickedMuscles.has(m));
+  const title = muscles.length ? muscles.join(' + ') : project;
+  addLog(key, { title, project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString(), muscles });
+  pickedMuscles.clear();
   return mins;
+}
+
+// Muscle groups: tap chips to tag the next workout. Each chip also shows how
+// many times that group was trained in the 7 days up to the viewed day, so a
+// zero is an obvious "haven't hit this lately".
+const MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Core', 'Legs', 'Cardio'];
+const pickedMuscles = new Set();
+
+function toggleMuscle(m){
+  if(pickedMuscles.has(m)) pickedMuscles.delete(m); else pickedMuscles.add(m);
+  renderMuscleChips(selectedDayKey);
+}
+
+/** How many sessions tagged each muscle group in the 7 days ending on `key`. */
+function muscleCountsFor(key){
+  const counts = Object.fromEntries(MUSCLE_GROUPS.map(m => [m, 0]));
+  for(let i=0; i<7; i++){
+    (state.logs[keyMinusDays(key, i)]||[]).forEach(l => (l.muscles||[]).forEach(m => { if(m in counts) counts[m]++; }));
+  }
+  return counts;
+}
+
+function renderMuscleChips(key){
+  const counts = muscleCountsFor(key);
+  document.getElementById('muscleChips').innerHTML = MUSCLE_GROUPS.map(m => `
+    <button class="mchip ${counts[m]?'hit':''} ${pickedMuscles.has(m)?'on':''}" onclick="toggleMuscle('${m}')" aria-pressed="${pickedMuscles.has(m)}" title="${counts[m] ? `Trained ${counts[m]}× in the last 7 days` : 'Not trained in the last 7 days'}">
+      ${m}<span class="mcount">${counts[m]}</span>
+    </button>`).join('');
+}
+
+// ---------------------------------------------------------------------------
+// 4d. BODY WEIGHT — one number per day, with the change vs. a week back and a
+// 30-day sparkline. Doesn't touch rarity; it's just for seeing the trend.
+// ---------------------------------------------------------------------------
+
+function logWeight(){
+  const input = document.getElementById('weightInput');
+  const val = Math.round(parseFloat(input.value)*10)/10;
+  if(!(val > 0)){ flagFields(['weightInput']); return; }
+  const key = selectedDayKey;
+  input.blur();
+  withUndo(`Logged ${val} ${state.goals.weightUnit}${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => {
+    state.weight[key] = val;
+  });
+}
+
+function clearWeight(){
+  const key = selectedDayKey;
+  if(state.weight[key] == null) return;
+  withUndo(`Removed weight for ${dayLabel(key)}`, () => { delete state.weight[key]; });
+}
+
+/** Switches lb ⇄ kg and converts every logged weight so the history stays right. */
+function setWeightUnit(unit){
+  if(unit === state.goals.weightUnit) return;
+  const factor = unit === 'kg' ? 0.45359237 : 1/0.45359237;
+  Object.keys(state.weight).forEach(k => { state.weight[k] = Math.round(state.weight[k]*factor*1000)/1000; });
+  state.goals.weightUnit = unit;
+  save(); render();
+}
+
+/** Weights are kept to 0.001 so lb ⇄ kg round-trips cleanly; shown to 0.1. */
+function fmtWeight(v){
+  return Math.round(v*10)/10;
+}
+
+/** Latest weight logged on or up to `days` days before `key`, as {key, val}. */
+function weightOnOrBefore(key, days){
+  for(let i=0; i<=days; i++){
+    const k = keyMinusDays(key, i);
+    if(state.weight[k] != null) return { key:k, val:state.weight[k] };
+  }
+  return null;
+}
+
+/** Renders the body-weight tile. The input shows the day's weight if it's
+ *  logged; otherwise your last entry sits in it as a placeholder. */
+function renderWeightTile(key){
+  const unit = state.goals.weightUnit;
+  const val = state.weight[key];
+  const input = document.getElementById('weightInput');
+  document.getElementById('weightTitle').textContent = isViewingToday() ? 'Body weight · today' : `Body weight · ${dayDate(key).toLocaleDateString([], {weekday:'short'})}`;
+  document.getElementById('weightDisplay').innerHTML = val != null ? `${fmtWeight(val)}<span class="unit">${unit}</span>` : '';
+  document.getElementById('weightUnitLabel').textContent = unit;
+  document.getElementById('weightUnitSelect').value = unit;
+  document.getElementById('logWeightBtn').textContent = val != null ? 'Update' : 'Log';
+  document.getElementById('clearWeightBtn').style.display = val != null ? '' : 'none';
+  const last = weightOnOrBefore(key, 30);
+  if(document.activeElement !== input) input.value = val != null ? fmtWeight(val) : '';
+  input.placeholder = last ? String(fmtWeight(last.val)) : unit;
+
+  // Change vs. the closest entry about a week back (5–10 days earlier).
+  let label = last ? 'Not logged · your last entry is the placeholder' : 'Log it most mornings to see the trend';
+  if(val != null){
+    let prev = null;
+    for(let i=5; i<=10 && prev == null; i++){ const k = keyMinusDays(key, i); if(state.weight[k] != null) prev = state.weight[k]; }
+    if(prev != null){
+      const diff = Math.round((val - prev)*10)/10;
+      label = diff === 0 ? 'Same as a week ago' : `${diff > 0 ? '+' : '−'}${Math.abs(diff)} ${unit} vs a week ago`;
+    } else label = 'Nothing from a week ago to compare yet';
+  }
+  document.getElementById('weightLabel').textContent = label;
+
+  // 30-day sparkline through the days that have an entry.
+  const pts = [];
+  for(let i=29; i>=0; i--){
+    const k = keyMinusDays(key, i);
+    if(state.weight[k] != null) pts.push({ x: 29-i, y: state.weight[k], k });
+  }
+  const svg = document.getElementById('weightSpark');
+  if(pts.length < 2){ svg.innerHTML = ''; svg.style.display = 'none'; return; }
+  svg.style.display = '';
+  const ys = pts.map(p=>p.y), lo = Math.min(...ys), hi = Math.max(...ys), span = (hi - lo) || 1;
+  const X = x => 4 + x/29*192, Y = y => 32 - (y-lo)/span*28;
+  svg.innerHTML = `<polyline class="spark-line" points="${pts.map(p=>`${X(p.x)},${Y(p.y)}`).join(' ')}"/>`
+    + pts.map(p => `<circle class="${p.k===key?'spark-sel':'spark-dot'}" cx="${X(p.x)}" cy="${Y(p.y)}" r="${p.k===key?2.6:1.6}"><title>${dayLabel(p.k)}: ${fmtWeight(p.y)} ${unit}</title></circle>`).join('');
 }
 
 function fitnessReady(){
   if(document.getElementById('fitCategory').value) return true;
-  showUndoToast('Mark a category as FIT (under Categories) first');
+  showUndoToast('Mark a category as FIT in Settings → Categories first');
   return false;
 }
 
@@ -1697,16 +1911,6 @@ function logFitManual(){
   });
 }
 
-function quickFit(mins){
-  if(!fitnessReady()) return;
-  const range = quickRange('fitStart', mins);
-  if(!range) return;
-  withUndo(`Logged ${mins}m fitness`, () => {
-    addFitSession(selectedDayKey, range.startDate, range.endDate);
-    document.getElementById('fitStart').value = '';
-  });
-}
-
 /** Renders the fitness card: minutes vs. the Epic requirement, a picker of
  *  fitness categories, and that day's fitness sessions (from any source —
  *  quest logs, timers, or this card). */
@@ -1718,20 +1922,21 @@ function renderFitWidget(key){
     ? fitProjects.map(p=>`<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('')
     : '<option value="">No fitness categories yet</option>';
   if(current && fitProjects.some(p=>p.name===current)) sel.value = current;
+  // Only worth a picker when there's an actual choice to make.
+  sel.style.display = fitProjects.length > 1 ? '' : 'none';
 
   const mins = fitnessMinsFor(key);
   const goal = state.goals.fitnessMins;
-  document.getElementById('fitTitle').textContent = isViewingToday() ? 'Fitness today' : `Fitness · ${dayDate(key).toLocaleDateString([], {weekday:'short'})}`;
-  document.getElementById('fitDisplay').innerHTML = mins + '<span class="unit">min</span>';
+  document.getElementById('fitTitle').textContent = isViewingToday() ? 'Fitness · today' : `Fitness · ${dayDate(key).toLocaleDateString([], {weekday:'short'})}`;
+  document.getElementById('fitDisplay').innerHTML = mins ? `${mins}<span class="unit">/ ${goal}m</span>` : '';
   document.getElementById('fitDisplay').style.color = goal && mins < goal ? 'var(--text)' : '';
   const meter = document.getElementById('fitMeter');
   meter.style.width = goal ? Math.min(100, mins/goal*100)+'%' : '100%';
   meter.classList.toggle('met', mins >= goal);
-  document.getElementById('fitMeterLabel').textContent = mins >= goal
-    ? 'Epic + Legendary unlocked'
-    : `${goal-mins} min more to unlock Epic`;
+  document.getElementById('fitMeterLabel').textContent = !fitProjects.length
+    ? 'Mark a category FIT in Settings to start'
+    : mins >= goal ? 'Epic + Legendary unlocked' : `${goal-mins} min more unlocks Epic`;
   document.getElementById('fitGoalInput').value = goal;
-  document.getElementById('fitQuickHint').textContent = isViewingToday() ? 'quick add · ends now' : 'quick add · from start time';
 
   const sessions = (state.logs[key]||[]).filter(l=>isFitnessProject(l.project)).sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts));
   document.getElementById('fitSessions').innerHTML = sessions.map(l => `
@@ -1739,42 +1944,13 @@ function renderFitWidget(key){
       <span>${escapeHtml(l.title)} · ${l.start ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)} · <b>${l.actualMins}m</b></span>
       <button class="xbtn" onclick="removeLogEntry('${key}','${l.id}')" title="Remove this session" aria-label="Remove this session">×</button>
     </div>`).join('');
+  renderMuscleChips(key);
 }
 
-/** Renders the rotting widget's live timer controls + that day's sessions. */
-function renderRotWidget(key, rotMins){
-  const timerRow = document.getElementById('rotTimerRow');
-  if(state.timer && state.timer.kind==='rot'){
-    timerRow.innerHTML = `<div class="timer-run"><span class="timer-dot"></span><span class="timer-elapsed"></span></div>
-      <button class="primary" onclick="stopTimer()">Stop &amp; log</button>`;
-  } else if(isViewingToday()){
-    timerRow.innerHTML = `<button onclick="startTimer('rot')">▶ Start rot timer</button><span class="hint">tap again when you're back</span>`;
-  } else {
-    timerRow.innerHTML = '';
-  }
-
-  document.getElementById('rotQuickHint').textContent = isViewingToday() ? 'quick add · ends now' : 'quick add · from start time';
-
-  const limit = state.goals.rotMins;
-  const meter = document.getElementById('rotMeter');
-  meter.style.width = limit ? Math.min(100, rotMins/limit*100)+'%' : '0%';
-  meter.classList.toggle('over', !!limit && rotMins > limit);
-  document.getElementById('rotMeterLabel').textContent = limit
-    ? (rotMins > limit ? `${rotMins-limit} min over the ${limit} min limit` : `${limit-rotMins} min left of ${limit} min limit`)
-    : 'No limit set';
-
-  const sessions = (state.logs[key]||[]).filter(l=>l.project==='Rotting').sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts));
-  document.getElementById('rotSessions').innerHTML = sessions.map(l => `
-    <div class="session">
-      <span>${l.start ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)} · <b>${l.actualMins}m</b></span>
-      <button class="xbtn" onclick="removeLogEntry('${key}','${l.id}')" title="Remove this session" aria-label="Remove this session">×</button>
-    </div>`).join('');
-}
-
-/** Renders one quest card. "To do" cards get their own start/end time
- *  fields + Log button (logging does NOT change status — see logQuestTime),
- *  plus a live timer and a Done button. "Completed" cards can be sent back
- *  with "Not done". Both are draggable between the two board columns. If
+/** Renders one quest card. "To do" cards lead with Start (live timer) and
+ *  Done; "+ Time" unfolds start/end fields to log a session without
+ *  finishing it (see logQuestTime). "Done" cards can be reopened. Edit and
+ *  remove sit as quiet icons top-right. Both kinds drag between columns. If
  *  this card is being edited, an inline rename/recategorize form shows instead. */
 function cardHTML(q){
   const color = colorFor(q.project);
@@ -1793,45 +1969,51 @@ function cardHTML(q){
   const recurTag = q.templateId && state.templates.some(t=>t.id===q.templateId)
     ? `<span class="recur-tag" title="Repeats daily — click to stop" onclick="stopRecurring('${q.templateId}')">↻ daily</span>` : '';
 
+  const icons = `<div class="card-icons">
+      <button class="icon-btn" onclick="startEditQuest('${q.id}')" title="Rename or change category" aria-label="Edit">✎</button>
+      <button class="icon-btn danger" onclick="removeQuest('${q.id}')" title="Remove" aria-label="Remove">×</button>
+    </div>`;
+
   if(q.status === 'todo'){
     const timing = state.timer && state.timer.kind==='quest' && state.timer.questId===q.id;
+    const open = openTimeRows.has(q.id);
     let timerBtn = '';
     if(timing) timerBtn = `<button class="primary" onclick="stopTimer()" title="Stop and log this session"><span class="timer-dot" style="display:inline-block;margin-right:6px;"></span>■ <span class="timer-elapsed"></span></button>`;
-    else if(isViewingToday()) timerBtn = `<button onclick="startTimer('quest','${q.id}')" title="Start a live timer">▶ Start</button>`;
+    else if(isViewingToday()) timerBtn = `<button onclick="startTimer('quest','${q.id}')" title="Time it live">▶ Start</button>`;
+    const timeRow = open ? `<div class="row" style="margin-top:8px;gap:6px;">
+        <input type="time" id="qstart-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" oninput="autoAdvanceTime(event,'qend-${q.id}')" onkeydown="handleTimeBackspace(event)" title="Started"/>
+        <span class="arrow">→</span>
+        <input type="time" id="qend-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ logQuestTime('${q.id}'); })" title="Finished — leave empty for now (today only)"/>
+        <button class="small primary" onclick="logQuestTime('${q.id}')">Log</button>
+      </div>` : '';
     return `<div class="card ${timing?'timing':''}" style="--tag-color:${color}" draggable="true" ondragstart="onDragStart(event,'${q.id}')">
       <div class="card-top">
         <div class="card-title">${escapeHtml(q.title)}</div>
+        ${icons}
       </div>
       <div class="card-meta">
-        <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m logged' : ''}</span>
+        <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m so far' : ''}</span>
         ${recurTag}
       </div>
-      <div class="row" style="margin-top:8px;gap:6px;">
-        <input type="time" id="qstart-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" oninput="autoAdvanceTime(event,'qend-${q.id}')" onkeydown="handleTimeBackspace(event)" title="Start"/>
-        <span class="arrow">→</span>
-        <input type="time" id="qend-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ logQuestTime('${q.id}'); })" title="End — leave empty for now (today only)"/>
-        <button class="small" onclick="logQuestTime('${q.id}')">Log</button>
-      </div>
+      ${timeRow}
       <div class="card-actions">
         ${timerBtn}
-        <button onclick="completeQuest('${q.id}')">✓ Done</button>
-        <button onclick="startEditQuest('${q.id}')">Edit</button>
-        <button onclick="removeQuest('${q.id}')">Remove</button>
+        <button class="primary" onclick="completeQuest('${q.id}')">✓ Done</button>
+        <button class="${open?'on':''}" onclick="toggleTimeRow('${q.id}')" title="Log time spent without finishing it">+ Time</button>
       </div>
     </div>`;
   }
   return `<div class="card" style="--tag-color:${color}" draggable="true" ondragstart="onDragStart(event,'${q.id}')">
     <div class="card-top">
       <div class="card-title done">${escapeHtml(q.title)}</div>
+      ${icons}
     </div>
     <div class="card-meta">
       <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m' : ''}${q.icsKey ? ' · from calendar' : ''}</span>
       <span>${q.completedAt ? fmtTime(q.completedAt) : ''}</span>
     </div>
     <div class="card-actions">
-      <button onclick="uncompleteQuest('${q.id}')">↺ Not done</button>
-      <button onclick="startEditQuest('${q.id}')">Edit</button>
-      <button onclick="removeQuest('${q.id}')">Remove</button>
+      <button onclick="uncompleteQuest('${q.id}')" title="Move back to To do">↺ Reopen</button>
     </div>
   </div>`;
 }
@@ -2461,20 +2643,26 @@ function lastNDays(n){
 function dayStats(key){
   const log = state.logs[key] || [];
   const cleared = log.filter(l=>l.project!=='Rotting' && l.project!=='Sleep').length;
-  const mins = log.reduce((s,l)=>s+(l.actualMins!=null ? l.actualMins : (l.est||0)),0);
+  // Sleep has its own number everywhere, so it isn't "time logged".
+  const mins = log.filter(l=>l.project!=='Sleep').reduce((s,l)=>s+(l.actualMins!=null ? l.actualMins : (l.est||0)),0);
   const sleep = sleepHoursFor(key);
-  const rot = state.rotting[key] || 0;
+  // Rotting is a plain category now, so count its logged sessions (however
+  // they were logged); fall back to the old running total for legacy days.
+  const rotLogs = log.filter(l=>l.project==='Rotting');
+  const rot = rotLogs.length ? rotLogs.reduce((s,l)=>s+(l.actualMins||0),0) : (state.rotting[key] || 0);
   const meals = state.meals[key] || [];
   return { cleared, mins, sleep, rot, meals, log };
 }
 
 // ---------------------------------------------------------------------------
 // Rarity system — every day earns a "quest drop" rarity based on how many of
-// your own goals it hit: sleep goal met, rotting under your limit, and
-// quests completed. Common → Uncommon → Rare → Epic → Legendary, each with
-// its own color and sword icon, echoing the "quest board" the app started as.
-// Two rules sit on top of the score: Epic and Legendary need the day's
-// fitness minutes, and every missed class knocks the day down one tier.
+// your own goals it hit: sleep goal met and quests completed. Common →
+// Uncommon → Rare → Epic → Legendary, each with its own color and sword icon,
+// echoing the "quest board" the app started as. Two rules sit on top of the
+// score: Epic and Legendary need the day's fitness minutes, and every missed
+// class knocks the day down one tier.
+// Rotting used to score too, but it only paid off if you *didn't* log it —
+// so it's an ordinary category now, shown on the clocks but not scored.
 // ---------------------------------------------------------------------------
 
 const EPIC_TIER = 3;
@@ -2482,65 +2670,53 @@ const EPIC_TIER = 3;
 const RARITY_TIERS = [
   { min:0, max:1, name:'Common',    color:'#9a9a9a' },
   { min:2, max:3, name:'Uncommon',  color:'#4caf6a' },
-  { min:4, max:5, name:'Rare',      color:'#4f8fd9' },
-  { min:6, max:7, name:'Epic',      color:'#a855d6' },
-  { min:8, max:8, name:'Legendary', color:'#e8b84b' }
+  { min:4, max:4, name:'Rare',      color:'#4f8fd9' },
+  { min:5, max:5, name:'Epic',      color:'#a855d6' },
+  { min:6, max:6, name:'Legendary', color:'#e8b84b' }
 ];
 
-/** Maps a 0–8 day score to its rarity tier. */
+/** Maps a 0–6 day score to its rarity tier. */
 function rarityForScore(score){
   return RARITY_TIERS.find(t => score >= t.min && score <= t.max) || RARITY_TIERS[0];
 }
 
 /**
- * Rates a day. Score 0–8: +2 for hitting the sleep goal, +2 for staying
- * under the rotting limit, +1 per quest *completed* that day (capped at 4,
- * via completedCounts — see completeQuest; attended classes don't count).
- * Then:
+ * Rates a day. Score 0–6: +2 for hitting the sleep goal, +1 per quest
+ * *completed* that day (capped at 4, via completedCounts — see
+ * completeQuest; attended classes don't count). Then:
  *   - Epic or above needs goals.fitnessMins of fitness-category time, else
  *     the day is capped at Rare.
  *   - Each missed class drops it one tier (never below Common).
  * Returns the final tier plus every input, for the breakdown strip/tooltips.
  */
 function dayRarity(key){
-  const stats = dayStats(key);
-  const sleepMet = state.goals.sleepHours > 0 && stats.sleep >= state.goals.sleepHours;
-  // Staying under the rot limit only counts on a day you actually tracked —
-  // otherwise a blank day would get +2 for doing nothing.
-  const active = dayHasActivity(key);
-  const rotUnder = stats.rot <= state.goals.rotMins;
-  const rotMet = rotUnder && active;
+  const sleepMet = state.goals.sleepHours > 0 && sleepHoursFor(key) >= state.goals.sleepHours;
   const questCount = state.completedCounts[key] || 0;
   const questPoints = Math.min(questCount, 4);
   const fitnessMins = fitnessMinsFor(key);
   const fitnessMet = fitnessMins >= state.goals.fitnessMins;
   const classes = classStatusFor(key);
 
-  const t = tierFor({ sleepMet, rotMet, questCount, fitnessMet, missed: classes.missed });
-  return { rarity: RARITY_TIERS[t.tier], tier: t.tier, baseTier: t.baseTier, score: t.score, sleepMet, rotMet, rotUnder, active, questCount, questPoints, fitnessMins, fitnessMet, fitnessCapped: t.fitnessCapped, classes };
+  const t = tierFor({ sleepMet, questCount, fitnessMet, missed: classes.missed });
+  return { rarity: RARITY_TIERS[t.tier], tier: t.tier, baseTier: t.baseTier, score: t.score, sleepMet, questCount, questPoints, fitnessMins, fitnessMet, fitnessCapped: t.fitnessCapped, classes };
 }
 
 /** The tier rules on their own, so the next-tier hint can try "what ifs". */
-function tierFor({ sleepMet, rotMet, questCount, fitnessMet, missed }){
-  const score = (sleepMet?2:0) + (rotMet?2:0) + Math.min(questCount, 4);
+function tierFor({ sleepMet, questCount, fitnessMet, missed }){
+  const score = (sleepMet?2:0) + Math.min(questCount, 4);
   const baseTier = RARITY_TIERS.indexOf(rarityForScore(score));
   const fitnessCapped = !fitnessMet && baseTier >= EPIC_TIER;
   const tier = Math.max(0, (fitnessCapped ? EPIC_TIER-1 : baseTier) - missed);
   return { score, baseTier, fitnessCapped, tier };
 }
 
-/** True once anything at all is logged for the day. */
-function dayHasActivity(key){
-  return (state.logs[key]||[]).length > 0 || sleepHoursFor(key) > 0
-    || (state.rotting[key]||0) > 0 || (state.completedCounts[key]||0) > 0;
-}
-
 /**
  * The cheapest set of things still doable on this day that lifts it at
- * least one tier (and the tier it lands on), e.g. "+1 quest" or "sleep goal + 15 fitness min". Tries every mix of
- * sleep / fitness / extra quests (rot can only go up, and a missed class is
- * fixed only by marking it cancelled, so neither is an option). Returns
- * null at Legendary, or {none:true} when nothing left can raise it.
+ * least one tier (and the tier it lands on), e.g. "+1 quest" or "sleep goal
+ * + 15 fitness min". Tries every mix of sleep / fitness / extra quests (a
+ * missed class is fixed only by marking it cancelled, so it's not an
+ * option). Returns null at Legendary, or {none:true} when nothing left can
+ * raise it.
  */
 function nextTierHint(key, r){
   if(r.tier >= RARITY_TIERS.length-1) return null;
@@ -2555,7 +2731,6 @@ function nextTierHint(key, r){
         if(!cost) continue;
         const t = tierFor({
           sleepMet: r.sleepMet || !!s,
-          rotMet: r.rotUnder, // doing anything makes the day count as tracked
           questCount: r.questCount + q,
           fitnessMet: r.fitnessMet || !!f,
           missed: r.classes.missed
@@ -2564,14 +2739,8 @@ function nextTierHint(key, r){
       }
     }
   }
-  // An untracked day that's under the rot limit goes up just by logging something.
-  if(!r.active && r.rotUnder && !best){
-    const t = tierFor({ sleepMet:r.sleepMet, rotMet:true, questCount:r.questCount, fitnessMet:r.fitnessMet, missed:r.classes.missed }).tier;
-    if(t >= target) best = { cost:1, s:0, f:0, q:0, t, any:true };
-  }
   if(!best) return { none:true };
   const parts = [];
-  if(best.any) parts.push('log anything');
   if(best.s) parts.push(`sleep goal (+${Math.round(sleepNeed*10)/10}h)`);
   if(best.f) parts.push(`${fitNeed} more fitness min`);
   if(best.q) parts.push(`${best.q} more quest${best.q===1?'':'s'}`);
@@ -2581,9 +2750,8 @@ function nextTierHint(key, r){
 /** One-line plain-English explanation of a day's rarity, for tooltips. */
 function rarityExplain(r){
   const parts = [
-    `score ${r.score}/8`,
+    `score ${r.score}/6`,
     `sleep goal ${r.sleepMet?'met':'not met'}`,
-    `rotting limit ${r.rotMet?'met':(r.rotUnder?'not counted (nothing logged)':'not met')}`,
     `${r.questCount} quest${r.questCount===1?'':'s'} completed`,
     `${r.fitnessMins}/${state.goals.fitnessMins} min fitness${r.fitnessCapped?' (capped at Rare)':''}`
   ];
@@ -2596,15 +2764,12 @@ function rarityExplain(r){
 function renderRarityStrip(key){
   const r = dayRarity(key);
   const goal = state.goals.fitnessMins;
-  const crit = (cls, mark, text, title) => `<span class="crit ${cls}" ${title?`title="${escapeHtml(title)}"`:''}><span class="ck">${mark}</span>${text}</span>`;
+  const crit = (cls, mark, text, title) => `<span class="crit ${cls}" ${title?`title="${escapeHtml(title)}"`:''}${cls.includes('jump')?' onclick="jumpToHealth()" role="button" tabindex="0"':''}><span class="ck">${mark}</span>${text}</span>`;
   const items = [
     `<span class="rs-tier" style="color:${r.rarity.color}" title="${escapeHtml(rarityExplain(r))}">${swordSVG(r.rarity.color, 12, 18)} ${r.rarity.name}</span>`,
-    crit(r.sleepMet?'met':'', r.sleepMet?'✓':'○', `Sleep ${sleepHoursFor(key)}/${state.goals.sleepHours}h`, '+2 when you hit your sleep goal'),
-    r.rotMet || !r.rotUnder
-      ? crit(r.rotMet?'met':'penalty', r.rotMet?'✓':'×', `Rot ${state.rotting[key]||0}/${state.goals.rotMins}m`, '+2 while rotting stays under your limit')
-      : crit('', '○', `Rot ${state.rotting[key]||0}/${state.goals.rotMins}m · log something first`, 'The rot limit only counts once the day has something logged'),
+    crit((r.sleepMet?'met':'')+' jump', r.sleepMet?'✓':'○', `Sleep ${sleepHoursFor(key)}/${state.goals.sleepHours}h`, '+2 when you hit your sleep goal · click to log sleep'),
     crit(r.questPoints>=4?'met':'', r.questPoints>=4?'✓':'○', `Quests ${Math.min(r.questCount,4)}/4`, '+1 per completed quest, up to 4'),
-    crit(r.fitnessMet?'met':(r.fitnessCapped?'locked':''), r.fitnessMet?'✓':'○', `Fitness ${r.fitnessMins}/${goal}m${r.fitnessCapped?' · Epic locked':''}`, `Epic and Legendary need ${goal} min in a FIT category`)
+    crit((r.fitnessMet?'met':(r.fitnessCapped?'locked':''))+' jump', r.fitnessMet?'✓':'○', `Fitness ${r.fitnessMins}/${goal}m${r.fitnessCapped?' · Epic locked':''}`, `Epic and Legendary need ${goal} min in a FIT category · click to log a workout`)
   ];
   const c = r.classes;
   if(c.total){
@@ -2618,8 +2783,8 @@ function renderRarityStrip(key){
   document.getElementById('rarityStrip').innerHTML = items.join('');
 }
 
-/** Renders a simple line-art sword icon (matches the eagle sigil's
- *  stroke-only style), tinted to a rarity's color. */
+/** Renders a simple line-art sword icon (a stroke-only rarity glyph),
+ *  tinted to a rarity's color. */
 function swordSVG(color, w, h){
   w = w || 16; h = h || 24;
   return `<svg viewBox="0 0 40 60" width="${w}" height="${h}" style="overflow:visible;flex-shrink:0;">
@@ -2660,7 +2825,6 @@ function showTierUpgradeToast(r){
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;">${swordSVG(rarity.color,14,20)} Upgraded to <b style="color:${rarity.color}">${rarity.name}</b></div>
     ${item(r.sleepMet, 'Sleep goal')}
-    ${item(r.rotMet, 'Rotting limit')}
     ${item(r.questCount>0, `Quests completed (${r.questCount})`)}
     ${item(r.fitnessMet, `Fitness ${r.fitnessMins}/${state.goals.fitnessMins}m`)}
     ${r.classes.total ? item(!r.classes.missed, r.classes.missed ? `${r.classes.missed} class missed` : 'No classes missed') : ''}
@@ -2750,46 +2914,54 @@ function renderCategoryBreakdown(){
   }).join('');
 }
 
-/** Renders the 7-day "This week" table, including the 7-day averages and
- *  each day's rarity sword, plus a summary badge for the week's average
- *  rarity. Clicking a row calls selectDay(). */
+/** Renders the 7-day "This week" table: one row per day (rarity sword
+ *  first, so the pattern reads at a glance), a 7-day average row at the
+ *  bottom, and a summary badge for the week's average rarity. Clicking a
+ *  row calls selectDay(). */
 function renderHistory(){
   const el = document.getElementById('weekHistory');
   const avgEl = document.getElementById('weekRarityAvg');
   const days = lastNDays(7);
   const todayK = todayKey();
-  const allStats = days.map(({key})=>dayStats(key));
-  const avgCleared = Math.round((allStats.reduce((s,d)=>s+d.cleared,0)/7)*10)/10;
-  const avgMins = Math.round(allStats.reduce((s,d)=>s+d.mins,0)/7);
-  const avgSleep = Math.round((allStats.reduce((s,d)=>s+d.sleep,0)/7)*10)/10;
-  const avgRot = Math.round(allStats.reduce((s,d)=>s+d.rot,0)/7);
+  const rowsData = days.map(({key, date}) => ({ key, date, s: dayStats(key), r: dayRarity(key) }));
+  const avg = f => rowsData.reduce((sum, d) => sum + f(d), 0) / 7;
+  const round1 = n => Math.round(n*10)/10;
 
-  const tiers = days.map(({key})=>dayRarity(key).tier);
-  const avgRarity = RARITY_TIERS[Math.round(tiers.reduce((a,b)=>a+b,0)/7)];
-  avgEl.innerHTML = `${swordSVG(avgRarity.color, 16, 24)} This week: <b style="color:${avgRarity.color}">${avgRarity.name}</b>`;
+  const avgRarity = RARITY_TIERS[Math.round(avg(d => d.r.tier))];
+  avgEl.innerHTML = `${swordSVG(avgRarity.color, 16, 24)} Week average: <b style="color:${avgRarity.color}">${avgRarity.name}</b>`;
 
-  const head = `<div class="weekhead"><span>Day</span><span>Sessions</span><span>Avg</span><span>Mins</span><span>Avg</span><span>Sleep</span><span>Avg</span><span>Rot</span><span>Avg</span><span></span></div>`;
-  const rows = days.map(({key,date})=>{
-    const s = dayStats(key);
-    const rarity = dayRarity(key).rarity;
+  const head = `<div class="weekhead"><span></span><span>Day</span><span>Logged</span><span>Done</span><span>Sleep</span><span>Fitness</span><span>Rotting</span></div>`;
+  const rows = rowsData.map(({key, date, s, r}) => {
     const label = key===todayK ? 'Today' : date.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});
     const classes = ['weekrow'];
     if(key===todayK) classes.push('today');
     if(key===selectedDayKey) classes.push('selected');
-    return `<div class="${classes.join(' ')}" onclick="selectDay('${key}')">
+    return `<div class="${classes.join(' ')}" onclick="selectDay('${key}')" title="${escapeHtml(r.rarity.name+' · '+rarityExplain(r))}">
+      <span class="rarity-icon">${swordSVG(r.rarity.color, 12, 18)}</span>
       <span class="wlabel">${label}</span>
-      <span>${s.cleared}</span>
-      <span>${avgCleared}</span>
-      <span><b>${s.mins}</b>m</span>
-      <span>${avgMins}m</span>
-      <span><b>${s.sleep}</b>h</span>
-      <span>${avgSleep}h</span>
-      <span><b>${s.rot}</b>m</span>
-      <span>${avgRot}m</span>
-      <span class="rarity-icon" title="${rarity.name}">${swordSVG(rarity.color, 12, 18)}</span>
+      <span><b>${fmtMins(s.mins)}</b></span>
+      <span>${r.questCount}</span>
+      <span>${s.sleep ? s.sleep+'h' : '–'}</span>
+      <span>${r.fitnessMins ? r.fitnessMins+'m' : '–'}</span>
+      <span>${s.rot ? s.rot+'m' : '–'}</span>
     </div>`;
   }).join('');
-  el.innerHTML = head + rows;
+  const foot = `<div class="weekrow weekfoot">
+      <span></span>
+      <span class="wlabel">7-day avg</span>
+      <span>${fmtMins(Math.round(avg(d => d.s.mins)))}</span>
+      <span>${round1(avg(d => d.r.questCount))}</span>
+      <span>${round1(avg(d => d.s.sleep))}h</span>
+      <span>${Math.round(avg(d => d.r.fitnessMins))}m</span>
+      <span>${Math.round(avg(d => d.s.rot))}m</span>
+    </div>`;
+  el.innerHTML = head + rows + foot;
+}
+
+/** 95 → "1h 35m", 40 → "40m", 0 → "–". */
+function fmtMins(m){
+  if(!m) return '–';
+  return m < 60 ? `${m}m` : `${Math.floor(m/60)}h${m%60 ? ' '+String(m%60).padStart(2,'0')+'m' : ''}`;
 }
 
 /** Builds the human-readable plain-text report for one day, used by both
@@ -2801,6 +2973,7 @@ function dayReportText(key, date){
   out += `Sessions logged: ${s.cleared} (${s.mins} min tracked)\n`;
   out += `Sleep: ${s.sleep} hrs\n`;
   out += `Rotting: ${s.rot} min\n`;
+  if(state.weight[key] != null) out += `Weight: ${fmtWeight(state.weight[key])} ${state.goals.weightUnit}\n`;
   if(s.log.length){
     out += "Timeline:\n";
     [...s.log].sort((a,b)=>new Date(a.ts)-new Date(b.ts)).forEach(l=>{
@@ -2844,7 +3017,24 @@ function renderBackupAge(){
   const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
   el.textContent = last == null ? 'No backup yet · your data only lives in this browser'
     : `Last backup: ${days === 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago'}`;
-  el.classList.toggle('stale', last == null || days >= 7);
+  const stale = last == null || days >= 7;
+  el.classList.toggle('stale', stale);
+  // Settings is folded away, so surface an overdue backup on its header too.
+  document.getElementById('settingsNote').textContent = stale ? '· time to back up' : '';
+}
+
+/** Remembers whether Settings was left open (a per-browser convenience). */
+function rememberSettingsOpen(open){
+  try{ localStorage.setItem('trackr-settings-open', open ? '1' : ''); }catch(e){}
+}
+
+function restoreSettingsOpen(){
+  try{ document.getElementById('settings').open = localStorage.getItem('trackr-settings-open') === '1'; }catch(e){}
+}
+
+/** Health sits below the week, so the strip's Sleep/Fitness items jump to it. */
+function jumpToHealth(){
+  document.getElementById('health').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 /** Restores a previously exported JSON backup, replacing all current data. */
@@ -2936,42 +3126,21 @@ function render(){
   ['todo','completed'].forEach(status=>{
     const el = document.getElementById('col-'+status);
     document.getElementById('cnt-'+status).textContent = cols[status].length;
-    const emptyText = status==='todo' ? 'Nothing to do — add a quest above.' : (viewingToday ? 'Nothing completed yet today.' : 'Nothing completed this day.');
+    const emptyText = status==='todo' ? 'All clear. Add a quest above.' : (viewingToday ? 'Nothing done yet today.' : 'Nothing done this day.');
     el.innerHTML = cols[status].length ? cols[status].map(cardHTML).join('') : `<div class="empty">${emptyText}</div>`;
   });
   Object.entries(typed).forEach(([id, v]) => { const el = document.getElementById(id); if(el) el.value = v; });
   document.getElementById('completedDayLabel').textContent = viewingToday ? '' : '· '+dayLabel(key);
 
-  // Sleep + rotting widgets reflect the selected day
-  const weekday = dayDate(key).toLocaleDateString([], {weekday:'short'});
-  const sleepEntry = state.sleep[key];
-  const sleepH = sleepHoursFor(key);
-  const rotMins = state.rotting[key] || 0;
-  const sleepGoal = state.goals.sleepHours;
-
-  document.getElementById('sleepTitle').textContent = viewingToday ? 'Sleep last night' : `Sleep · night before ${weekday}`;
-  document.getElementById('sleepDisplay').innerHTML = sleepH + '<span class="unit">hrs</span>';
-  document.getElementById('sleepDisplay').style.color = (sleepGoal && sleepH > 0 && sleepH < sleepGoal) ? 'var(--red)' : '';
-  document.getElementById('sleepRangeText').textContent = (sleepEntry && sleepEntry.bed && sleepEntry.wake) ? `${formatTime12(sleepEntry.bed)} → ${formatTime12(sleepEntry.wake)}` : '';
-  document.getElementById('sleepGoalInput').value = sleepGoal;
-  const sleepMeter = document.getElementById('sleepMeter');
-  sleepMeter.style.width = sleepGoal ? Math.min(100, sleepH/sleepGoal*100)+'%' : '0%';
-  sleepMeter.classList.toggle('met', !!sleepGoal && sleepH >= sleepGoal);
-  sleepMeter.classList.toggle('over', !!sleepGoal && sleepH > 0 && sleepH < sleepGoal);
-  document.getElementById('sleepMeterLabel').textContent = !sleepH ? 'Not logged yet'
-    : (sleepH >= sleepGoal ? `Goal met (${sleepGoal}h)` : `${Math.round((sleepGoal-sleepH)*10)/10}h short of ${sleepGoal}h goal`);
-
-  document.getElementById('rotTitle').textContent = viewingToday ? 'Time spent rotting' : `Rotting · ${weekday}`;
-  document.getElementById('rotDisplay').innerHTML = rotMins + '<span class="unit">min</span>';
-  document.getElementById('rotDisplay').style.color = (state.goals.rotMins && rotMins > state.goals.rotMins) ? 'var(--red)' : '';
-  document.getElementById('rotGoalInput').value = state.goals.rotMins;
-  renderRotWidget(key, rotMins);
+  // Health tiles reflect the selected day
+  renderSleepTile(key);
+  renderWeightTile(key);
   renderFitWidget(key);
 
   // "Where ___ went" section
   const dayName = viewingToday ? "today" : dayDate(key).toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'});
   document.getElementById('dayGoneTitle').textContent = `Where ${dayName} went`;
-  document.getElementById('resetDayBtn').textContent = viewingToday ? "Reset today" : `Reset ${dayLabel(key)}`;
+  document.getElementById('resetDayBtn').textContent = viewingToday ? "Clear today" : `Clear ${dayLabel(key)}`;
 
   const s = dayStats(key);
   document.getElementById('statCleared').textContent = s.cleared;
