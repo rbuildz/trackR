@@ -518,7 +518,7 @@
         <path d="M80 -12 L85 16 L85 162 L80 208 L75 162 L75 16 Z"/>
       </svg>
       <div>
-        <div class="word">rbuilds / trackR</div>
+        <div class="word">trackR</div>
         <h1 id="pageTitle">Today's quests</h1>
       </div>
     </div>
@@ -1923,7 +1923,7 @@ function timerElapsedText(){
 function updateTimerDisplays(){
   const text = timerElapsedText();
   document.querySelectorAll('.timer-elapsed').forEach(el => { el.textContent = text; });
-  document.title = state.timer ? `● ${text} · trackR` : 'rbuilds / trackR';
+  document.title = state.timer ? `● ${text} · trackR` : 'trackR';
 }
 
 // ---------------------------------------------------------------------------
@@ -3663,7 +3663,7 @@ function importJSON(e){
  *  though "This week" stops showing it. */
 function exportSingleDay(key){
   const date = dayDate(key);
-  let out = "RBUILDS TRACKR — DAY ARCHIVE\n";
+  let out = "TRACKR — DAY ARCHIVE\n";
   out += "Auto-saved on rollover (day fell outside the 7-day window)\n";
   out += "=".repeat(50) + "\n\n";
   out += dayReportText(key, date);
@@ -3674,7 +3674,7 @@ function exportSingleDay(key){
  *  (the "Export log (.txt)" button). */
 function exportLog(){
   const days = lastNDays(7);
-  let out = "RBUILDS TRACKR — WEEKLY LOG\n";
+  let out = "TRACKR — WEEKLY LOG\n";
   out += "Generated " + new Date().toLocaleString() + "\n";
   out += "=".repeat(50) + "\n\n";
   days.forEach(({key,date}) => { out += dayReportText(key, date); });
