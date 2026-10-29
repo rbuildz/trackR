@@ -3,26 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>trackR</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-16 -20 240 236'%3E%3Crect x='-16' y='-20' width='240' height='236' rx='36' fill='%23111111'/%3E%3Cg fill='%23B39B84'%3E%3Cpath d='M30 38 L78 32.5 L150.99 32.5 L50.35 105.3 Q111.6 138.15 178 180 Q106.4 147.85 29.65 106.7 L117.01 43.5 L78 43.5 Z'/%3E%3Cpath d='M80 -12 L85 16 L85 162 L80 208 L75 162 L75 16 Z'/%3E%3C/g%3E%3C/svg%3E">
-<meta name="theme-color" content="#111111">
+<title>rbuilds / trackR</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-16 -20 240 236'%3E%3Crect x='-16' y='-20' width='240' height='236' rx='36' fill='%230d0d0d'/%3E%3Cg fill='%23C9A961'%3E%3Cpath d='M30 38 L78 32.5 L150.99 32.5 L50.35 105.3 Q111.6 138.15 178 180 Q106.4 147.85 29.65 106.7 L117.01 43.5 L78 43.5 Z'/%3E%3Cpath d='M80 -12 L85 16 L85 162 L80 208 L75 162 L75 16 Z'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="theme-color" content="#0d0d0d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* ---- Design tokens (rbuilds palette — taken from the R mark: iridium
-     gold #B39B84 on #111111, with warm neutrals built around them) ---- */
+  /* ---- Design tokens (rbuilds palette — matches rbuilds.me: gold #c9a961
+     on near-black #0d0d0d, neutral greys, warm off-white text) ---- */
   :root{
-    --bg:#111111;
-    --panel:#181716;
-    --panel-2:#1f1e1c;
-    --border:#2b2926;
-    --border-strong:#3d3a36;
-    --text:#ebe6df;
-    --text-mute:#8f8880;
-    --gold:#b39b84;
-    --gold-dim:#76675a;
-    --green:#7fa88a;
-    --red:#b06a54;
+    --bg:#0d0d0d;
+    --panel:#131313;
+    --panel-2:#1a1a1a;
+    --border:#1e1e1e;
+    --border-strong:#2a2a2a;
+    --text:#f0ede6;
+    --text-mute:#888888;
+    --gold:#c9a961;
+    --gold-dim:#7d6a3f;
+    --green:#6cc48c;
+    --red:#e2725b;
+    /* Health accents: each tile gets its own hue so the page isn't all gold */
+    --sleep:#7ea7e6;
+    --fit:#ec7f96;
+    --weight:#5ec4b2;
 
     /* Quest-rarity tiers (Fortnite/New World-style: same icon, different color) */
     --rarity-common:#9a9a9a;
@@ -417,6 +421,47 @@
   .tier-toast .check-item.met{color:var(--text);}
   .tier-toast .check-mark{width:12px;text-align:center;flex-shrink:0;}
 
+  /* ---- Color: gold stays the brand; data gets its own hues ---- */
+  /* Rarity strip wears the day's tier color */
+  .rarity-strip{
+    padding:10px 14px;border-radius:3px;border:1px solid color-mix(in srgb, var(--tier, var(--border)) 35%, transparent);
+    border-left:3px solid var(--tier, var(--border));
+    background:color-mix(in srgb, var(--tier, transparent) 9%, var(--panel));
+  }
+  /* Quest cards carry a wash of their category color */
+  .card{border-left-width:3px;background:color-mix(in srgb, var(--tag-color, transparent) 7%, var(--panel-2));}
+  .card.timing{border-color:var(--tag-color, var(--gold-dim));box-shadow:0 0 0 1px color-mix(in srgb, var(--tag-color, var(--gold)) 30%, transparent);}
+  button.primary{background:color-mix(in srgb, var(--gold) 14%, transparent);}
+  .col-title #cnt-todo, .col-title #cnt-completed{color:var(--gold);}
+  #col-completed-wrap .col-title > span:last-child{color:var(--green);}
+  /* Health tiles: sleep blue, fitness pink, weight teal */
+  .qtile.sleep{--accent:var(--sleep);}
+  .qtile.fit{--accent:var(--fit);}
+  .qtile{border-top:2px solid var(--accent, var(--border));background:linear-gradient(180deg, color-mix(in srgb, var(--accent, transparent) 7%, var(--panel)) 0, var(--panel) 90px);}
+  .qtile .wtitle{color:var(--accent, var(--text-mute));}
+  .qtile-val{color:var(--accent, var(--gold));}
+  .qtile .meter-fill{background:color-mix(in srgb, var(--accent, var(--gold)) 55%, var(--panel-2));}
+  .qtile .meter-fill.met{background:var(--accent, var(--green));box-shadow:0 0 8px color-mix(in srgb, var(--accent, var(--green)) 50%, transparent);}
+  .qtile .meter-fill.over{background:var(--red);}
+  .qtile button.primary{border-color:color-mix(in srgb, var(--accent, var(--gold)) 60%, transparent);color:var(--accent, var(--gold));background:color-mix(in srgb, var(--accent, var(--gold)) 14%, transparent);}
+  .qtile button.primary:hover{background:var(--accent, var(--gold));color:var(--bg);}
+  .qtile .session{border-left:2px solid var(--accent, var(--border));}
+  .qtile .mchip.hit{border-color:color-mix(in srgb, var(--accent) 45%, var(--border));}
+  .qtile .mchip.hit .mcount, .qtile .session .mtags{color:var(--accent);}
+  .qtile .mchip.on{border-color:var(--accent);color:var(--bg);background:var(--accent);}
+  .qtile .mchip.on .mcount{color:var(--bg);}
+  .tile-split.weight{--accent:var(--weight);}
+  .tile-split.weight .spark .spark-line{stroke:var(--weight);}
+  .tile-split.weight .spark .spark-dot{fill:var(--weight);}
+  /* Numbers in stats and the week table, colored by what they measure */
+  .stats b.c-sleep, .weekrow .c-sleep{color:var(--sleep);}
+  .stats b.c-rot, .weekrow .c-rot{color:#a99cbc;}
+  .weekrow .c-fit{color:var(--fit);}
+  .weekrow .c-done{color:var(--green);}
+  .weekrow .c-none{color:var(--text-mute);}
+  .daypill.active{background:color-mix(in srgb, var(--pill-rarity, var(--gold)) 12%, var(--panel-2));}
+  .daypill{border-bottom-width:2px;}
+
   /* ---- Responsive: narrow screens drop secondary columns ---- */
   @media(max-width:640px){#qb{padding:20px 16px 64px;} .board{grid-template-columns:1fr;} .grid2, .health{grid-template-columns:1fr;} .card-icons{opacity:1;}
     .weekrow,.weekhead{grid-template-columns:18px 1fr repeat(3, 52px);font-size:10px;gap:6px;}
@@ -488,8 +533,8 @@
       <div class="stats">
         <span><b id="statMins">0</b>m logged</span>
         <span><b id="statCleared">0</b> sessions</span>
-        <span><b id="statSleep">0</b>h sleep</span>
-        <span><b id="statRot">0</b>m rotting</span>
+        <span><b id="statSleep" class="c-sleep">0</b>h sleep</span>
+        <span><b id="statRot" class="c-rot">0</b>m rotting</span>
       </div>
     </div>
     <div class="clockrow" id="clockRow">
@@ -527,7 +572,7 @@
       <h2 class="section-title" id="healthTitle" style="margin:0;">Health</h2>
     </div>
     <div class="health">
-      <div class="qtile">
+      <div class="qtile sleep">
         <div class="qtile-head">
           <span class="wtitle" id="sleepTitle">Sleep · last night</span>
           <span class="qtile-val" id="sleepDisplay"></span>
@@ -543,7 +588,7 @@
       </div>
 
       <!-- Fitness + body weight share one tile: one place for "the body" -->
-      <div class="qtile">
+      <div class="qtile fit">
         <div class="qtile-head">
           <span class="wtitle" id="fitTitle">Fitness · today</span>
           <span class="qtile-val" id="fitDisplay"></span>
@@ -561,7 +606,7 @@
         </div>
         <div class="session-list" id="fitSessions"></div>
 
-        <div class="tile-split">
+        <div class="tile-split weight">
           <div class="qtile-head">
             <span class="wtitle" id="weightTitle">Body weight</span>
             <span class="qtile-val" id="weightDisplay"></span>
@@ -610,7 +655,7 @@
       <div class="categories" id="categoryChips"></div>
       <div class="catform">
         <input type="text" id="newCatName" placeholder="New category" style="width:180px;" onkeydown="if(event.key==='Enter') addCategory()"/>
-        <input type="color" id="newCatColor" value="#b39b84"/>
+        <input type="color" id="newCatColor" value="#c9a961"/>
         <label class="checklabel"><input type="checkbox" id="newCatFitness"/> fitness</label>
         <button onclick="addCategory()">Add</button>
       </div>
@@ -699,13 +744,13 @@
 // ---------------------------------------------------------------------------
 
 const DEFAULT_PROJECTS = [
-  {name:"OrbitArm", color:"#b39b84"},
-  {name:"UAV Swap", color:"#7fa88a"},
-  {name:"Toolbox", color:"#b06a54"},
-  {name:"Coursework", color:"#8a7fd4"},
-  {name:"General", color:"#8a8886"},
-  {name:"Rotting", color:"#5a5a5e"},
-  {name:"Sleep", color:"#6f8fae"}
+  {name:"OrbitArm", color:"#c9a961"},
+  {name:"UAV Swap", color:"#6cc48c"},
+  {name:"Toolbox", color:"#e2725b"},
+  {name:"Coursework", color:"#9d8cf0"},
+  {name:"General", color:"#a39e96"},
+  {name:"Rotting", color:"#7c7488"},
+  {name:"Sleep", color:"#7ea7e6"}
 ];
 
 // How far back the day bar lets you go (today + 6 previous days = "this week").
@@ -834,8 +879,8 @@ function normalizeState(){
     if(q.status==='completed' && !q.completedDay) q.completedDay = q.completedAt ? logicalKeyForDate(new Date(q.completedAt)) : todayKey();
   });
 
-  if(!state.projects.some(p=>p && p.name==='Sleep')) state.projects.push({name:'Sleep', color:'#6f8fae'});
-  if(!state.projects.some(p=>p && p.name==='Rotting')) state.projects.push({name:'Rotting', color:'#5a5a5e'});
+  if(!state.projects.some(p=>p && p.name==='Sleep')) state.projects.push({name:'Sleep', color:'#7ea7e6'});
+  if(!state.projects.some(p=>p && p.name==='Rotting')) state.projects.push({name:'Rotting', color:'#7c7488'});
 
   // One-time: give people a Fitness category to start with (they can flag
   // their own categories as fitness instead, or delete this one).
@@ -843,9 +888,18 @@ function normalizeState(){
     if(!state.projects.some(p=>p.fitness)){
       const existing = state.projects.find(p=>p.name.toLowerCase()==='fitness');
       if(existing) existing.fitness = true;
-      else state.projects.push({name:'Fitness', color:'#c97a8a', fitness:true});
+      else state.projects.push({name:'Fitness', color:'#ec7f96', fitness:true});
     }
     state.fitnessSeeded = true;
+  }
+
+  // One-time: the old built-in category colors were very muted. Swap any that
+  // are still exactly the old default for the brighter one (custom picks stay).
+  if(state.colorsRefreshed !== 2){
+    const OLD_TO_NEW = { '#b39b84':'#c9a961', '#d9a35b':'#c9a961', '#7fa88a':'#6cc48c', '#b06a54':'#e2725b', '#8a7fd4':'#9d8cf0',
+                         '#8a8886':'#a39e96', '#5a5a5e':'#7c7488', '#6f8fae':'#7ea7e6', '#c97a8a':'#ec7f96' };
+    state.projects.forEach(p=>{ const c = (p.color||'').toLowerCase(); if(OLD_TO_NEW[c]) p.color = OLD_TO_NEW[c]; });
+    state.colorsRefreshed = 2;
   }
 
   // One-time: attended classes used to count as completed quests for rarity.
@@ -984,7 +1038,7 @@ function save(){
 
 function colorFor(project){
   const p = state.projects.find(p=>p.name===project);
-  return p ? p.color : '#b39b84';
+  return p ? p.color : '#c9a961';
 }
 
 /** Categories you can file quests under (Sleep has its own widget). */
@@ -2780,7 +2834,9 @@ function renderRarityStrip(key){
   const next = nextTierHint(key, r);
   if(next && next.none) items.push(`<span class="rs-next" style="color:var(--text-mute)">Nothing left can raise this day${c.missed ? ' — a missed class can still be marked cancelled' : ''}</span>`);
   else if(next) items.push(`<span class="rs-next">→ <b style="color:${next.rarity.color}">${next.rarity.name}</b>: ${escapeHtml(next.text)}</span>`);
-  document.getElementById('rarityStrip').innerHTML = items.join('');
+  const strip = document.getElementById('rarityStrip');
+  strip.style.setProperty('--tier', r.rarity.color);
+  strip.innerHTML = items.join('');
 }
 
 /** Renders a simple line-art sword icon (a stroke-only rarity glyph),
@@ -2940,10 +2996,10 @@ function renderHistory(){
       <span class="rarity-icon">${swordSVG(r.rarity.color, 12, 18)}</span>
       <span class="wlabel">${label}</span>
       <span><b>${fmtMins(s.mins)}</b></span>
-      <span>${r.questCount}</span>
-      <span>${s.sleep ? s.sleep+'h' : '–'}</span>
-      <span>${r.fitnessMins ? r.fitnessMins+'m' : '–'}</span>
-      <span>${s.rot ? s.rot+'m' : '–'}</span>
+      <span class="${r.questCount?'c-done':'c-none'}">${r.questCount}</span>
+      <span class="${s.sleep?'c-sleep':'c-none'}">${s.sleep ? s.sleep+'h' : '–'}</span>
+      <span class="${r.fitnessMins?'c-fit':'c-none'}">${r.fitnessMins ? r.fitnessMins+'m' : '–'}</span>
+      <span class="${s.rot?'c-rot':'c-none'}">${s.rot ? s.rot+'m' : '–'}</span>
     </div>`;
   }).join('');
   const foot = `<div class="weekrow weekfoot">
@@ -2951,8 +3007,8 @@ function renderHistory(){
       <span class="wlabel">7-day avg</span>
       <span>${fmtMins(Math.round(avg(d => d.s.mins)))}</span>
       <span>${round1(avg(d => d.r.questCount))}</span>
-      <span>${round1(avg(d => d.s.sleep))}h</span>
-      <span>${Math.round(avg(d => d.r.fitnessMins))}m</span>
+      <span class="c-sleep">${round1(avg(d => d.s.sleep))}h</span>
+      <span class="c-fit">${Math.round(avg(d => d.r.fitnessMins))}m</span>
       <span>${Math.round(avg(d => d.s.rot))}m</span>
     </div>`;
   el.innerHTML = head + rows + foot;
