@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>trackR</title>
+<title>rbuilds / trackR</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-16 -20 240 236'%3E%3Crect x='-16' y='-20' width='240' height='236' rx='36' fill='%230d0d0d'/%3E%3Cg fill='%23C9A961'%3E%3Cpath d='M30 38 L78 32.5 L150.99 32.5 L50.35 105.3 Q111.6 138.15 178 180 Q106.4 147.85 29.65 106.7 L117.01 43.5 L78 43.5 Z'/%3E%3Cpath d='M80 -12 L85 16 L85 162 L80 208 L75 162 L75 16 Z'/%3E%3C/g%3E%3C/svg%3E">
 <meta name="theme-color" content="#0d0d0d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -488,6 +488,10 @@
   .trend-chart .goal{stroke:var(--gold-dim);stroke-width:1;stroke-dasharray:3 3;}
   .trend-chart .hit{fill:transparent;}
   .trend-chart .trend-line{fill:none;stroke:var(--gold-dim);stroke-width:1.2;stroke-linejoin:round;}
+  .trend-chart .callout rect{fill:var(--panel-2);stroke:var(--gold-dim);stroke-width:0.75;}
+  .trend-chart .callout text{fill:var(--text);}
+  .trend-chart .callout{cursor:pointer;}
+  .trend-chart .callout-guide{stroke:var(--gold-dim);stroke-width:0.75;stroke-dasharray:2 2;}
   .trend-chart .stem{stroke:var(--gold-dim);stroke-width:1.5;opacity:0.6;}
   .trend-chart .col.pick{cursor:pointer;}
   .trend-chart .col.pick:hover .hit{fill:rgba(255,255,255,0.03);}
@@ -3444,6 +3448,15 @@ function trendMetric(){
   return TREND_METRICS[m] ? m : 'sleep';
 }
 
+// The day whose dot was clicked — it gets a value label until another is clicked.
+let trendFocusKey = null;
+
+function trendClick(key){
+  trendFocusKey = trendFocusKey === key ? null : key;
+  if(key >= keyMinusDays(todayKey(), DAYS_BACK) && key !== selectedDayKey) selectDay(key);
+  else renderTrends();
+}
+
 function setTrendMetric(m){
   try{ localStorage.setItem('trackr-trend', m); }catch(e){}
   renderTrends();
@@ -3470,7 +3483,7 @@ function renderTrends(){
   document.getElementById('trendTabs').innerHTML = Object.entries(TREND_METRICS).map(([k, m]) =>
     `<button class="trend-tab ${k===metricKey?'on':''}" onclick="setTrendMetric('${k}')">${m.label}</button>`).join('');
 
-  const today = todayKey(), oldest = keyMinusDays(today, DAYS_BACK);
+  const today = todayKey();
   const keys = Array.from({length: TREND_DAYS}, (_, i) => keyMinusDays(today, TREND_DAYS-1-i));
   const W = 300, H = 150, L = 28, R = 4, T = 6, B = 16;
   const slot = (W - L - R) / TREND_DAYS, bw = slot * 0.58;
@@ -3503,6 +3516,9 @@ function renderTrends(){
     return d ? `<path class="${cls||'trend-line'}" d="${d}"/>` : '';
   };
   const cx = i => L + i*slot + slot/2;
+  // Where each day's label would sit, and what it says (filled in below).
+  const anchors = {};
+  const shortDay = k => { const d = dayDate(k); return d.toLocaleDateString([], {weekday:'short'}) + ' ' + d.getDate(); };
   const hit = (k, i, tip) => `<rect class="hit" x="${L+i*slot}" y="${T}" width="${slot}" height="${H-T-B}"><title>${escapeHtml(tip)}</title></rect>`;
 
   if(axis === 'amount'){
@@ -3533,7 +3549,8 @@ function renderTrends(){
     keys.forEach((k, i) => {
       const v = values[i];
       const fill = isRarity ? RARITY_TIERS[v].color : !goal ? MET : v >= goal ? MET : SHORT;
-      svg += `<g class="col ${k>=oldest?'pick':''}" onclick="selectDay('${k}')">${hit(k, i, `${dayLabel(k)} · ${missing(v) ? 'not logged' : M.fmt(v)}`)}${dot(cx(i), y(missing(v) ? min : v), fill, k, missing(v))}</g>`;
+      anchors[k] = { x: cx(i), y: y(missing(v) ? min : v), text: `${shortDay(k)} · ${missing(v) ? 'not logged' : M.fmt(v)}${goal && !missing(v) ? ' / '+M.fmt(goal) : ''}` };
+      svg += `<g class="col pick" onclick="trendClick('${k}')">${hit(k, i, `${dayLabel(k)} · ${missing(v) ? 'not logged' : M.fmt(v)}`)}${dot(cx(i), y(missing(v) ? min : v), fill, k, missing(v))}</g>`;
     });
     document.getElementById('trendSummary').textContent = !withData.length ? '' :
       isRarity ? 'avg ' + RARITY_TIERS[Math.round(values.reduce((a,b)=>a+b,0)/values.length)].name
@@ -3541,7 +3558,7 @@ function renderTrends(){
     const legend = isRarity ? 'Dot color = that day’s tier.'
       : goal ? `Gold = hit ${M.fmt(goal)}, red = short${M.gapWhenZero ? ', hollow = not logged' : ''}.` : 'Time logged each day.';
     document.getElementById('trendNote').textContent =
-      (axisPref === 'time' && !M.spans ? `${M.label} has no time of day, so this shows amounts. ` : '') + legend + ' Click a day to open it.';
+      (axisPref === 'time' && !M.spans ? `${M.label} has no time of day, so this shows amounts. ` : '') + legend + ' Click a dot for its value.';
   } else {
     // Time of day, downward like a calendar.
     const spans = keys.map(k => M.spans(k));
@@ -3575,7 +3592,10 @@ function renderTrends(){
         const fill = M.byCategory ? s.color : dayFill;
         return dot(cx(i), y(s.s), fill, k) + dot(cx(i), y(s.e), fill, k);
       }).join('');
-      svg += `<g class="col ${k>=oldest?'pick':''}" onclick="selectDay('${k}')">${hit(k, i, dayLabel(k)+' · '+tip)}${marks}</g>`;
+      anchors[k] = d.length
+        ? { x: cx(i), y: y(firstOf(d).s), text: `${shortDay(k)} · ${shortClock(firstOf(d).s)} → ${shortClock(lastOf(d).e)} · ${M.fmt(v)}` }
+        : { x: cx(i), y: y(lo) + 4, text: `${shortDay(k)} · nothing logged` };
+      svg += `<g class="col pick" onclick="trendClick('${k}')">${hit(k, i, dayLabel(k)+' · '+tip)}${marks}</g>`;
     });
     const firsts = spans.filter(d=>d.length).map(d => firstOf(d).s);
     const lasts = spans.filter(d=>d.length).map(d => lastOf(d).e);
@@ -3585,7 +3605,16 @@ function renderTrends(){
       metricKey==='sleep' ? `Top line = bedtime, bottom = wake. Gold = ${M.fmt(goal)}+ that night, red = short.`
       : M.byCategory ? 'Each session, colored by category.'
       : `Each workout. Gold = day hit ${M.fmt(goal)}, red = short.`;
-    document.getElementById('trendNote').textContent += ' Click a day to open it.';
+    document.getElementById('trendNote').textContent += ' Click a dot for its value.';
+  }
+  const a = trendFocusKey && anchors[trendFocusKey];
+  if(a){
+    const w = a.text.length * 4.6 + 10, h = 13;
+    const bx = Math.min(Math.max(a.x - w/2, L), W - R - w);
+    const by = a.y - h - 6 >= 0 ? a.y - h - 6 : a.y + 6;
+    svg += `<line class="callout-guide" x1="${a.x}" x2="${a.x}" y1="${T}" y2="${H-B}"/>
+      <g class="callout" onclick="trendClick('${trendFocusKey}')"><rect x="${bx}" y="${by}" width="${w}" height="${h}" rx="2"/>
+      <text x="${bx + w/2}" y="${by + 9}" text-anchor="middle">${escapeHtml(a.text)}</text></g>`;
   }
   document.getElementById('trendChart').innerHTML = svg;
 }
