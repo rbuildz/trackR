@@ -221,6 +221,7 @@
   }
   .chip .chip-fit.on{border-color:var(--green);color:var(--green);}
   .chip .chip-fit:hover{color:var(--green);border-color:var(--green);}
+  .chip{cursor:pointer;user-select:none;}
   .catform{display:flex;gap:8px;flex-wrap:wrap;}
 
   /* ---- Dual analog clock visualization ("Where ___ went") ---- */
@@ -707,7 +708,7 @@
     </div>
 
     <div class="setgroup">
-      <div class="sublabel">Categories <span class="sublabel-hint">· FIT = counts as fitness</span></div>
+      <div class="sublabel">Categories <span class="sublabel-hint">· FIT = counts as fitness · double-click to recolor</span></div>
       <div class="categories" id="categoryChips"></div>
       <div class="catform">
         <input type="text" autocomplete="off" id="newCatName" placeholder="New category" style="width:180px;" onkeydown="if(event.key==='Enter') addCategory()"/>
@@ -1313,12 +1314,36 @@ function renderDayBar(){
 function renderCategoryChips(){
   const el = document.getElementById('categoryChips');
   el.innerHTML = state.projects.map((p, i) => `
-    <div class="chip" style="--chip-color:${p.color}">
+    <div class="chip" style="--chip-color:${p.color}" ondblclick="pickCategoryColor(${i}, this, event)" title="Double-click to change the color">
       ${escapeHtml(p.name)}
       ${p.name==='Sleep' || p.name==='Rotting' ? '' : `<button class="chip-fit ${p.fitness?'on':''}" onclick="toggleFitness(${i})" title="${p.fitness ? 'Counts as fitness — click to stop' : 'Click to count this category as fitness'}">FIT</button>`}
       <button onclick="removeCategory(${i})" aria-label="Remove ${escapeHtml(p.name)}">×</button>
     </div>
   `).join('');
+}
+
+/** Double-click a category chip → the browser's color picker. The chip
+ *  previews the color as you drag; closing the picker saves it (one Undo). */
+function pickCategoryColor(idx, chipEl, e){
+  const p = state.projects[idx];
+  if(!p || (e && e.target.closest('button'))) return; // × and FIT keep their own clicks
+  const original = p.color;
+  document.querySelectorAll('.cat-color-picker').forEach(el => el.remove());
+  const input = document.createElement('input');
+  input.type = 'color';
+  input.className = 'cat-color-picker';
+  input.value = /^#[0-9a-f]{6}$/i.test(original) ? original : '#c9a961';
+  // Sits on the chip so the picker opens next to it; invisible otherwise.
+  const r = chipEl.getBoundingClientRect();
+  input.style.cssText = `position:fixed;left:${r.left}px;top:${r.bottom}px;width:1px;height:1px;opacity:0;border:0;padding:0;`;
+  document.body.appendChild(input);
+  input.addEventListener('input', () => chipEl.style.setProperty('--chip-color', input.value));
+  input.addEventListener('change', () => {
+    input.remove();
+    if(input.value.toLowerCase() === original.toLowerCase()) return;
+    withUndo(`"${p.name}" is now ${input.value}`, () => { state.projects[idx].color = input.value; });
+  });
+  input.click();
 }
 
 /** Flags/unflags a category as fitness (its time counts toward the Epic gate). */
@@ -3663,7 +3688,7 @@ function importJSON(e){
  *  though "This week" stops showing it. */
 function exportSingleDay(key){
   const date = dayDate(key);
-  let out = "TRACKR — DAY ARCHIVE\n";
+  let out = "RBUILDS TRACKR — DAY ARCHIVE\n";
   out += "Auto-saved on rollover (day fell outside the 7-day window)\n";
   out += "=".repeat(50) + "\n\n";
   out += dayReportText(key, date);
@@ -3674,7 +3699,7 @@ function exportSingleDay(key){
  *  (the "Export log (.txt)" button). */
 function exportLog(){
   const days = lastNDays(7);
-  let out = "TRACKR — WEEKLY LOG\n";
+  let out = "RBUILDS TRACKR — WEEKLY LOG\n";
   out += "Generated " + new Date().toLocaleString() + "\n";
   out += "=".repeat(50) + "\n\n";
   days.forEach(({key,date}) => { out += dayReportText(key, date); });
@@ -3813,3 +3838,4 @@ try{
 </script>
 </body>
 </html>
+
