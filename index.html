@@ -21,12 +21,9 @@
     --text-mute:#888888;
     --gold:#c9a961;
     --gold-dim:#7d6a3f;
-    --green:#6cc48c;
-    --red:#e2725b;
-    /* Health accents: each tile gets its own hue so the page isn't all gold */
-    --sleep:#7ea7e6;
-    --fit:#ec7f96;
-    --weight:#5ec4b2;
+    --green:#7fae8c;
+    --red:#c96f5c;
+    --gold-line:color-mix(in srgb, var(--gold) 35%, transparent);
 
     /* Quest-rarity tiers (Fortnite/New World-style: same icon, different color) */
     --rarity-common:#9a9a9a;
@@ -104,7 +101,7 @@
   }
   .timer-check.show{display:flex;}
   .timer-check .tc-msg{flex:1 1 220px;}
-  .timer-check input[type=time]{width:110px;}
+  .timer-check input.tin{width:96px;}
   .backup-age.stale{color:var(--red);}
   .daybar.past{border-bottom-color:var(--gold-dim);}
   .daybar .navbtn{padding:10px 10px;flex-shrink:0;}
@@ -126,14 +123,16 @@
     display:flex;gap:8px;flex-wrap:wrap;align-items:center;
   }
   .addbar input[type=text]{flex:1;min-width:180px;}
+  .addbar input.tin{flex:0 0 96px;min-width:0;}
   .addbar-hint{margin:8px 0 16px;min-height:12px;}
-  input[type=text], select, input[type=number], input[type=time]{
+  input[type=text], select, input[type=number]{
     background:var(--panel);border:1px solid var(--border);color:var(--text);
     font-family:'Outfit',sans-serif;font-size:14px;padding:10px 12px;border-radius:2px;
     outline:none;
   }
   input[type=text]:focus, select:focus, input[type=number]:focus, input[type=time]:focus{border-color:var(--gold-dim);}
-  input[type=time]{color-scheme:dark;}
+  input.tin{font-variant-numeric:tabular-nums;}
+  input.tin::placeholder{color:#555;}
   select{color:var(--text-mute);}
   input[type=color]{
     width:38px;height:38px;padding:2px;background:var(--panel);border:1px solid var(--border);
@@ -185,6 +184,11 @@
   .tag{font-size:10px;letter-spacing:0.5px;}
   .card-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
   .card-actions button{padding:4px 8px;font-size:10px;}
+  .card-actions{align-items:center;}
+  .card-actions .arrow{color:var(--text-mute);font-size:11px;}
+  input.tin.qtime{width:70px;padding:4px 7px;font-size:11px;}
+  .card-actions .log-only{display:none;border-style:dashed;}
+  .card:has(.qtime:not(:placeholder-shown)) .log-only{display:inline-block;}
   .empty{color:var(--text-mute);font-size:12px;font-style:italic;}
   .recur-tag{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-mute);cursor:pointer;border:1px solid var(--border);border-radius:2px;padding:1px 5px;}
   .recur-tag:hover{color:var(--red);border-color:var(--red);}
@@ -282,14 +286,14 @@
   .logrow .ltime.editable{cursor:pointer;border-bottom:1px dashed transparent;}
   .logrow .ltime.editable:hover{border-bottom-color:var(--gold-dim);}
   .logrow.editing{flex-wrap:wrap;}
-  .logrow.editing input[type=time]{padding:5px 6px;font-size:12px;width:104px;}
+  .logrow.editing input.tin{padding:5px 6px;font-size:12px;width:104px;}
 
   /* ---- Health tiles (sleep, body weight, fitness) ---- */
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
   .health{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
   .health{align-items:start;}
   .tile-split{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
-  .health input[type=time]{width:108px;padding:7px 8px;font-size:13px;}
+  .health input.tin{width:88px;padding:7px 8px;font-size:13px;}
   .health input[type=number]{padding:7px 8px;font-size:13px;}
   .health select{padding:5px 8px;font-size:12px;}
   .spark{display:block;width:100%;height:36px;margin-top:10px;}
@@ -421,46 +425,72 @@
   .tier-toast .check-item.met{color:var(--text);}
   .tier-toast .check-mark{width:12px;text-align:center;flex-shrink:0;}
 
-  /* ---- Color: gold stays the brand; data gets its own hues ---- */
-  /* Rarity strip wears the day's tier color */
-  .rarity-strip{
-    padding:10px 14px;border-radius:3px;border:1px solid color-mix(in srgb, var(--tier, var(--border)) 35%, transparent);
-    border-left:3px solid var(--tier, var(--border));
-    background:color-mix(in srgb, var(--tier, transparent) 9%, var(--panel));
+  /* ---- Color: gold carries the page. Other hues stay where they mean
+     something (category edges, rarity tiers) and never fill or glow. ---- */
+  /* Section titles and column headers pick up a gold hairline */
+  section.block{border-top-color:var(--gold-line);}
+  .settings{border-top-color:var(--gold-line);}
+  h2.section-title::before{
+    content:'';display:inline-block;width:14px;height:1px;background:var(--gold);
+    vertical-align:middle;margin-right:10px;
   }
-  /* Quest cards carry a wash of their category color */
-  .card{border-left-width:3px;background:color-mix(in srgb, var(--tag-color, transparent) 7%, var(--panel-2));}
-  .card.timing{border-color:var(--tag-color, var(--gold-dim));box-shadow:0 0 0 1px color-mix(in srgb, var(--tag-color, var(--gold)) 30%, transparent);}
-  button.primary{background:color-mix(in srgb, var(--gold) 14%, transparent);}
-  .col-title #cnt-todo, .col-title #cnt-completed{color:var(--gold);}
-  #col-completed-wrap .col-title > span:last-child{color:var(--green);}
-  /* Health tiles: sleep blue, fitness pink, weight teal */
-  .qtile.sleep{--accent:var(--sleep);}
-  .qtile.fit{--accent:var(--fit);}
-  .qtile{border-top:2px solid var(--accent, var(--border));background:linear-gradient(180deg, color-mix(in srgb, var(--accent, transparent) 7%, var(--panel)) 0, var(--panel) 90px);}
-  .qtile .wtitle{color:var(--accent, var(--text-mute));}
-  .qtile-val{color:var(--accent, var(--gold));}
-  .qtile .meter-fill{background:color-mix(in srgb, var(--accent, var(--gold)) 55%, var(--panel-2));}
-  .qtile .meter-fill.met{background:var(--accent, var(--green));box-shadow:0 0 8px color-mix(in srgb, var(--accent, var(--green)) 50%, transparent);}
+  .col-title{color:var(--gold);}
+  .col-title #cnt-todo, .col-title #cnt-completed{color:var(--text-mute);}
+  .sublabel{color:var(--gold-dim);}
+  .wtitle{color:var(--gold);}
+  .stats b{color:var(--gold);}
+  .header{border-bottom:1px solid var(--gold-line);margin-bottom:4px;}
+  .brand .word{color:var(--gold-dim);}
+  /* Rarity strip: just a hairline in the day's tier color */
+  .rarity-strip{border-left:2px solid var(--tier, var(--border));padding:2px 0 2px 12px;}
+  /* Quest cards: flat, category on the left edge, gold when it's running */
+  .card.timing{border-color:var(--gold);border-left-color:var(--tag-color, var(--gold));}
+  .card:hover{border-color:var(--gold-dim);border-left-color:var(--tag-color, var(--gold-dim));}
+  /* Health tiles: gold hairline on top, gold numbers and bars */
+  .qtile{border-top:1px solid var(--gold-dim);}
+  .tile-split{border-top-color:var(--gold-line);}
+  .qtile-val{color:var(--gold);}
+  .qtile .meter-fill{background:var(--gold-dim);}
+  .qtile .meter-fill.met{background:var(--gold);}
   .qtile .meter-fill.over{background:var(--red);}
-  .qtile button.primary{border-color:color-mix(in srgb, var(--accent, var(--gold)) 60%, transparent);color:var(--accent, var(--gold));background:color-mix(in srgb, var(--accent, var(--gold)) 14%, transparent);}
-  .qtile button.primary:hover{background:var(--accent, var(--gold));color:var(--bg);}
-  .qtile .session{border-left:2px solid var(--accent, var(--border));}
-  .qtile .mchip.hit{border-color:color-mix(in srgb, var(--accent) 45%, var(--border));}
-  .qtile .mchip.hit .mcount, .qtile .session .mtags{color:var(--accent);}
-  .qtile .mchip.on{border-color:var(--accent);color:var(--bg);background:var(--accent);}
-  .qtile .mchip.on .mcount{color:var(--bg);}
-  .tile-split.weight{--accent:var(--weight);}
-  .tile-split.weight .spark .spark-line{stroke:var(--weight);}
-  .tile-split.weight .spark .spark-dot{fill:var(--weight);}
-  /* Numbers in stats and the week table, colored by what they measure */
-  .stats b.c-sleep, .weekrow .c-sleep{color:var(--sleep);}
-  .stats b.c-rot, .weekrow .c-rot{color:#a99cbc;}
-  .weekrow .c-fit{color:var(--fit);}
-  .weekrow .c-done{color:var(--green);}
-  .weekrow .c-none{color:var(--text-mute);}
-  .daypill.active{background:color-mix(in srgb, var(--pill-rarity, var(--gold)) 12%, var(--panel-2));}
-  .daypill{border-bottom-width:2px;}
+  .qtile .mchip.hit{border-color:var(--gold-dim);}
+  .qtile .mchip.hit .mcount, .qtile .session .mtags{color:var(--gold);}
+  .qtile .mchip.on{border-color:var(--gold);color:var(--gold);}
+  .qtile .session{border-left:1px solid var(--gold-dim);}
+  /* Week table: gold for numbers with a value, dim for empty */
+  .weekrow .c-sleep, .weekrow .c-fit, .weekrow .c-done{color:var(--gold);}
+  .weekrow .c-rot{color:var(--text-mute);}
+  .weekrow .c-none{color:#555;}
+  .weekhead{color:var(--gold-dim);}
+
+  /* ---- Leftover to-dos (open ones added on an earlier day) ---- */
+  .leftovers{display:none;margin:-4px 0 16px;padding:10px 12px;border:1px solid var(--gold-line);border-radius:3px;}
+  .leftovers.show{display:block;}
+  .lo-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);margin-bottom:6px;}
+  .lo-head b{color:var(--gold);font-weight:500;}
+  .lo-row{display:flex;align-items:center;gap:8px;padding:5px 0 5px 10px;border-left:2px solid var(--tag-color, var(--border));margin-top:4px;}
+  .lo-title{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lo-age{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);white-space:nowrap;}
+  .tag .age{color:var(--text-mute);}
+
+  /* ---- Health left column: sleep tile + 2-week trends chart ---- */
+  .health-col{display:flex;flex-direction:column;gap:16px;min-width:0;}
+  .trend-sum{font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);white-space:nowrap;}
+  .trend-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:10px;}
+  .trend-tab{padding:4px 9px;font-size:10px;}
+  .trend-tab.on{border-color:var(--gold);color:var(--gold);}
+  .trend-chart{display:block;width:100%;height:auto;margin-top:12px;}
+  .trend-chart text{font-family:'DM Mono',monospace;font-size:7.5px;fill:var(--text-mute);}
+  .trend-chart text.sel{fill:var(--gold);}
+  .trend-chart text.goal-label{fill:var(--gold-dim);}
+  .trend-chart .axis{stroke:var(--border-strong);stroke-width:1;}
+  .trend-chart .grid{stroke:var(--border);stroke-width:1;}
+  .trend-chart .goal{stroke:var(--gold-dim);stroke-width:1;stroke-dasharray:3 3;}
+  .trend-chart .hit{fill:transparent;}
+  .trend-chart .trend-line{fill:none;stroke:var(--gold-dim);stroke-width:1.2;stroke-linejoin:round;}
+  .trend-chart .stem{stroke:var(--gold-dim);stroke-width:1.5;opacity:0.6;}
+  .trend-chart .col.pick{cursor:pointer;}
+  .trend-chart .col.pick:hover .hit{fill:rgba(255,255,255,0.03);}
 
   /* ---- Responsive: narrow screens drop secondary columns ---- */
   @media(max-width:640px){#qb{padding:20px 16px 64px;} .board{grid-template-columns:1fr;} .grid2, .health{grid-template-columns:1fr;} .card-icons{opacity:1;}
@@ -504,15 +534,16 @@
   <!-- ===== LOG: everything you do day-to-day, in the order you reach for it ===== -->
   <section class="block" style="border-top:none;padding-top:0;">
     <div class="addbar">
-      <input type="text" id="newTitle" placeholder="Add a quest…" />
-      <select id="newProject" title="Category"></select>
-      <input type="time" id="newStart" style="width:118px;" oninput="autoAdvanceTime(event,'newEnd'); updateAddButton()" onkeydown="handleTimeBackspace(event)" title="Already did it? Add when it started"/>
+      <input type="text" autocomplete="off" id="newTitle" placeholder="Add a quest…" />
+      <select id="newProject" title="Category" onchange="onCategoryPicked()"></select>
+      <input type="text" autocomplete="off" spellcheck="false" class="tin" data-next="newEnd" id="newStart" style="width:96px;" placeholder="start" oninput="updateAddButton()" onkeydown="handleTimeBackspace(event)" title="Already did it? When it started — 7, 730, 7:30p, 1930 or now"/>
       <span class="arrow">→</span>
-      <input type="time" id="newEnd" style="width:118px;" oninput="updateAddButton()" onkeydown="endFieldKeydown(event,'newStart',addQuest)" title="Leave empty to end now (today only)"/>
+      <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="newStart" id="newEnd" style="width:96px;" placeholder="end" oninput="updateAddButton()" onkeydown="endFieldKeydown(event,'newStart',addQuest)" title="When it ended, or how long (45m, 1h30). Empty = now (today only)"/>
       <label class="checklabel"><input type="checkbox" id="newRecurring"/> daily</label>
       <button class="primary" id="addQuestBtn" onclick="addQuest()">Add</button>
     </div>
     <div class="hint addbar-hint" id="addHint"></div>
+    <div class="leftovers" id="leftovers"></div>
 
     <div class="board">
       <div class="col" id="col-todo-wrap" ondragover="event.preventDefault(); this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDrop(event,'todo')">
@@ -526,7 +557,7 @@
     </div>
   </section>
 
-  <!-- ===== REVIEW: where the day went, then the week ===== -->
+  <!-- ===== REVIEW: where the day went, health, then the week ===== -->
   <section class="block">
     <div class="section-head">
       <h2 class="section-title" id="dayGoneTitle" style="margin:0;">Where today went</h2>
@@ -553,25 +584,13 @@
     <div id="logrows"></div>
   </section>
 
-  <section class="block">
-    <div class="section-head">
-      <h2 class="section-title" style="margin:0;">This week</h2>
-      <div id="weekRarityAvg" class="rarity-week-avg" style="margin:0;"></div>
-    </div>
-    <div class="hint" style="margin-bottom:10px;">Click a day to open it</div>
-    <div id="weekHistory"></div>
-    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Last 30 days</h2>
-    <div id="monthGrid" class="month-grid"></div>
-    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Time by category · 7 days</h2>
-    <div id="categoryBreakdown"></div>
-  </section>
-
   <!-- ===== HEALTH: sleep, body weight, workouts ===== -->
   <section class="block" id="health">
     <div class="section-head">
       <h2 class="section-title" id="healthTitle" style="margin:0;">Health</h2>
     </div>
     <div class="health">
+      <div class="health-col">
       <div class="qtile sleep">
         <div class="qtile-head">
           <span class="wtitle" id="sleepTitle">Sleep · last night</span>
@@ -580,11 +599,23 @@
         <div class="meter"><div class="meter-fill" id="sleepMeter"></div></div>
         <div class="meter-label" id="sleepMeterLabel"></div>
         <div class="row">
-          <input type="time" id="bedInput" oninput="autoAdvanceTime(event,'wakeInput')" onkeydown="handleTimeBackspace(event)" title="Went to bed"/>
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="bed" data-next="wakeInput" id="bedInput" placeholder="bed" onkeydown="handleTimeBackspace(event)" title="Went to bed — e.g. 11:30, 1a"/>
           <span class="arrow">→</span>
-          <input type="time" id="wakeInput" onkeydown="endFieldKeydown(event,'bedInput',logSleep)" title="Woke up — leave empty for now (today only)"/>
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="bedInput" id="wakeInput" placeholder="woke" onkeydown="endFieldKeydown(event,'bedInput',logSleep)" title="Woke up — e.g. 7:30. Empty = now (today only)"/>
           <button class="primary" id="logSleepBtn" onclick="logSleep()">Log</button>
         </div>
+      </div>
+
+      <!-- Trends: one 2-week chart at a time, picked with the tabs -->
+      <div class="qtile trends">
+        <div class="qtile-head">
+          <span class="wtitle">Last 14 days</span>
+          <span class="trend-sum" id="trendSummary"></span>
+        </div>
+        <div class="trend-tabs" id="trendTabs"></div>
+        <svg class="trend-chart" id="trendChart" viewBox="0 0 300 150" role="img" aria-label="Two-week trend chart"></svg>
+        <div class="meter-label" id="trendNote"></div>
+      </div>
       </div>
 
       <!-- Fitness + body weight share one tile: one place for "the body" -->
@@ -599,9 +630,9 @@
         <div class="muscles" id="muscleChips"></div>
         <div class="row">
           <select id="fitCategory" title="Which fitness category to log under"></select>
-          <input type="time" id="fitStart" oninput="autoAdvanceTime(event,'fitEnd')" onkeydown="handleTimeBackspace(event)" title="Started"/>
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-next="fitEnd" id="fitStart" placeholder="start" onkeydown="handleTimeBackspace(event)" title="Started — 7, 730, 7:30p or now"/>
           <span class="arrow">→</span>
-          <input type="time" id="fitEnd" onkeydown="endFieldKeydown(event,'fitStart',logFitManual)" title="Finished — leave empty for now (today only)"/>
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="fitStart" id="fitEnd" placeholder="end" onkeydown="endFieldKeydown(event,'fitStart',logFitManual)" title="Finished, or how long (45m, 1h). Empty = now (today only)"/>
           <button class="primary" onclick="logFitManual()">Log</button>
         </div>
         <div class="session-list" id="fitSessions"></div>
@@ -614,7 +645,7 @@
           <svg class="spark" id="weightSpark" viewBox="0 0 200 36" preserveAspectRatio="none"></svg>
           <div class="meter-label" id="weightLabel"></div>
           <div class="row">
-            <input type="number" id="weightInput" step="0.1" min="0" style="width:110px;" onkeydown="if(event.key==='Enter') logWeight()" title="Weight"/>
+            <input type="number" autocomplete="off" id="weightInput" step="0.1" min="0" style="width:110px;" onkeydown="if(event.key==='Enter') logWeight()" title="Weight"/>
             <span class="hint" id="weightUnitLabel">lb</span>
             <button class="primary" id="logWeightBtn" onclick="logWeight()">Log</button>
             <button class="xbtn" id="clearWeightBtn" onclick="clearWeight()" title="Remove this day's weight" aria-label="Remove this day's weight">×</button>
@@ -622,6 +653,19 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="block">
+    <div class="section-head">
+      <h2 class="section-title" style="margin:0;">This week</h2>
+      <div id="weekRarityAvg" class="rarity-week-avg" style="margin:0;"></div>
+    </div>
+    <div class="hint" style="margin-bottom:10px;">Click a day to open it</div>
+    <div id="weekHistory"></div>
+    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Last 30 days</h2>
+    <div id="monthGrid" class="month-grid"></div>
+    <h2 class="section-title" style="font-size:14px;margin-top:22px;">Time by category · 7 days</h2>
+    <div id="categoryBreakdown"></div>
   </section>
 
   <!-- ===== SETUP: things you set once, folded away ===== -->
@@ -632,12 +676,12 @@
       <div class="sublabel">Goals</div>
       <div class="goalrow">
         <label for="sleepGoalInput">Sleep goal</label>
-        <input type="number" id="sleepGoalInput" min="0" max="24" step="0.5" style="width:60px;" onchange="setSleepGoal(this.value)"/>
+        <input type="number" autocomplete="off" id="sleepGoalInput" min="0" max="24" step="0.5" style="width:60px;" onchange="setSleepGoal(this.value)"/>
         <span>hrs · +2 toward rarity</span>
       </div>
       <div class="goalrow">
         <label for="fitGoalInput">Fitness for Epic</label>
-        <input type="number" id="fitGoalInput" min="0" style="width:60px;" onchange="setFitGoal(this.value)"/>
+        <input type="number" autocomplete="off" id="fitGoalInput" min="0" style="width:60px;" onchange="setFitGoal(this.value)"/>
         <span>min in a FIT category, needed for Epic &amp; Legendary</span>
       </div>
       <div class="goalrow">
@@ -648,13 +692,21 @@
         </select>
         <span>switching converts what you've logged</span>
       </div>
+      <div class="goalrow">
+        <label for="trendAxisSelect">Trends graph</label>
+        <select id="trendAxisSelect" onchange="setTrendAxis(this.value)" style="padding:5px 8px;font-size:11px;">
+          <option value="amount">Amount per day</option>
+          <option value="time">Time of day</option>
+        </select>
+        <span>time of day shows bed → wake, workout and session times</span>
+      </div>
     </div>
 
     <div class="setgroup">
       <div class="sublabel">Categories <span class="sublabel-hint">· FIT = counts as fitness</span></div>
       <div class="categories" id="categoryChips"></div>
       <div class="catform">
-        <input type="text" id="newCatName" placeholder="New category" style="width:180px;" onkeydown="if(event.key==='Enter') addCategory()"/>
+        <input type="text" autocomplete="off" id="newCatName" placeholder="New category" style="width:180px;" onkeydown="if(event.key==='Enter') addCategory()"/>
         <input type="color" id="newCatColor" value="#c9a961"/>
         <label class="checklabel"><input type="checkbox" id="newCatFitness"/> fitness</label>
         <button onclick="addCategory()">Add</button>
@@ -745,12 +797,12 @@
 
 const DEFAULT_PROJECTS = [
   {name:"OrbitArm", color:"#c9a961"},
-  {name:"UAV Swap", color:"#6cc48c"},
-  {name:"Toolbox", color:"#e2725b"},
-  {name:"Coursework", color:"#9d8cf0"},
+  {name:"UAV Swap", color:"#7fae8c"},
+  {name:"Toolbox", color:"#c96f5c"},
+  {name:"Coursework", color:"#958bc4"},
   {name:"General", color:"#a39e96"},
-  {name:"Rotting", color:"#7c7488"},
-  {name:"Sleep", color:"#7ea7e6"}
+  {name:"Rotting", color:"#6e6a74"},
+  {name:"Sleep", color:"#8ea3bf"}
 ];
 
 // How far back the day bar lets you go (today + 6 previous days = "this week").
@@ -877,10 +929,12 @@ function normalizeState(){
     if(q.status==='queued' || q.status==='active') q.status='todo';
     if(q.status==='cleared') q.status='completed';
     if(q.status==='completed' && !q.completedDay) q.completedDay = q.completedAt ? logicalKeyForDate(new Date(q.completedAt)) : todayKey();
+    // To-dos from before the leftover check existed count as added today.
+    if(q.status==='todo' && !q.createdDay) q.createdDay = todayKey();
   });
 
-  if(!state.projects.some(p=>p && p.name==='Sleep')) state.projects.push({name:'Sleep', color:'#7ea7e6'});
-  if(!state.projects.some(p=>p && p.name==='Rotting')) state.projects.push({name:'Rotting', color:'#7c7488'});
+  if(!state.projects.some(p=>p && p.name==='Sleep')) state.projects.push({name:'Sleep', color:'#8ea3bf'});
+  if(!state.projects.some(p=>p && p.name==='Rotting')) state.projects.push({name:'Rotting', color:'#6e6a74'});
 
   // One-time: give people a Fitness category to start with (they can flag
   // their own categories as fitness instead, or delete this one).
@@ -888,18 +942,20 @@ function normalizeState(){
     if(!state.projects.some(p=>p.fitness)){
       const existing = state.projects.find(p=>p.name.toLowerCase()==='fitness');
       if(existing) existing.fitness = true;
-      else state.projects.push({name:'Fitness', color:'#ec7f96', fitness:true});
+      else state.projects.push({name:'Fitness', color:'#c08e96', fitness:true});
     }
     state.fitnessSeeded = true;
   }
 
-  // One-time: the old built-in category colors were very muted. Swap any that
-  // are still exactly the old default for the brighter one (custom picks stay).
-  if(state.colorsRefreshed !== 2){
-    const OLD_TO_NEW = { '#b39b84':'#c9a961', '#d9a35b':'#c9a961', '#7fa88a':'#6cc48c', '#b06a54':'#e2725b', '#8a7fd4':'#9d8cf0',
-                         '#8a8886':'#a39e96', '#5a5a5e':'#7c7488', '#6f8fae':'#7ea7e6', '#c97a8a':'#ec7f96' };
+  // One-time: move categories still on an earlier built-in color to the
+  // current palette (custom picks stay).
+  if(state.colorsRefreshed !== 3){
+    // Both the original muted defaults and the brighter ones from a later pass map to the current set.
+    const OLD_TO_NEW = { '#b39b84':'#c9a961', '#d9a35b':'#c9a961', '#7fa88a':'#7fae8c', '#6cc48c':'#7fae8c', '#b06a54':'#c96f5c', '#e2725b':'#c96f5c',
+                         '#8a7fd4':'#958bc4', '#9d8cf0':'#958bc4', '#5a5a5e':'#6e6a74', '#7c7488':'#6e6a74', '#6f8fae':'#8ea3bf', '#7ea7e6':'#8ea3bf',
+                         '#c97a8a':'#c08e96', '#ec7f96':'#c08e96', '#8a8886':'#a39e96' };
     state.projects.forEach(p=>{ const c = (p.color||'').toLowerCase(); if(OLD_TO_NEW[c]) p.color = OLD_TO_NEW[c]; });
-    state.colorsRefreshed = 2;
+    state.colorsRefreshed = 3;
   }
 
   // One-time: attended classes used to count as completed quests for rarity.
@@ -945,7 +1001,7 @@ function ensureRecurringQuests(){
     if(!hasActive){
       state.quests.push({
         id: uid(),
-        title:t.title, project:t.project, status:'todo', totalMins:0, completedAt:null, templateId:t.id
+        title:t.title, project:t.project, status:'todo', totalMins:0, completedAt:null, templateId:t.id, createdDay: todayKey()
       });
     }
   });
@@ -1029,7 +1085,10 @@ function startClock(){
   setInterval(tick, 1000);
 }
 
+let saveCount = 0; // bumps on every save, so Ctrl+Z knows nothing happened since
+
 function save(){
+  saveCount++;
   try{
     normalizeState();
     localStorage.setItem('trackr-data', JSON.stringify(state));
@@ -1048,7 +1107,7 @@ function loggableProjects(){
 
 function populateProjectSelect(){
   const sel = document.getElementById('newProject');
-  const current = sel.value;
+  const current = sel.value || lastCategory();
   sel.innerHTML = loggableProjects().map(p=>`<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('');
   if(current && loggableProjects().some(p=>p.name===current)) sel.value = current;
 
@@ -1098,15 +1157,22 @@ function performUndo(){
 /** Runs a state mutation, saves + renders, and offers an Undo that restores
  *  a snapshot taken just before the mutation. Keeps every action reversible
  *  without each one hand-writing its own inverse. */
+// The most recent undoable action. Ctrl+Z can reverse it even after the
+// toast fades — but only while nothing else has been saved since.
+let lastUndo = null;
+
 function withUndo(message, mutate){
   const snapshot = JSON.stringify(state);
   mutate();
   save(); render();
-  showUndoToast(message, () => {
+  const restore = () => {
+    lastUndo = null;
     state = JSON.parse(snapshot);
     normalizeState();
     save(); render();
-  });
+  };
+  lastUndo = { restore, at: saveCount, message };
+  showUndoToast(message, restore);
 }
 
 /** Briefly flags empty/invalid inputs red so it's obvious what's missing. */
@@ -1122,11 +1188,27 @@ function flagFields(ids){
 }
 document.addEventListener('input', e => { if(e.target.classList) e.target.classList.remove('invalid'); });
 
+/** Why a session can't be right, or '' if it's fine: it ends in the future,
+ *  or runs longer than 12h (16h for sleep) — usually a mistyped time. */
+function rangeProblem(start, end, isSleep){
+  const hrs = (end - start) / 3600000, max = isSleep ? 16 : 12, soon = Date.now() + 60000;
+  if(start.getTime() > soon) return `${fmtTime(start)} hasn't happened yet — check the ${isSleep ? 'bed' : 'start'} time`;
+  if(hrs > max) return `That's ${Math.round(hrs)}h (${fmtTime(start)} → ${fmtTime(end)}) — check the times`;
+  if(end.getTime() > soon) return `${fmtTime(end)} hasn't happened yet — check the ${isSleep ? 'wake' : 'end'} time`;
+  return '';
+}
+
 /** Reads a start/end time pair. An empty end means "now" when logging to
  *  today. Returns {startVal, endVal}, or null (after flagging) if incomplete. */
 function readRange(startId, endId){
-  const startVal = document.getElementById(startId).value;
-  let endVal = document.getElementById(endId).value;
+  const startVal = readTime(startId);
+  let endVal = readTime(endId);
+  const unreadable = [startId, endId].filter((id, i) => [startVal, endVal][i] === null);
+  if(unreadable.length){
+    flagFields(unreadable);
+    showUndoToast("Couldn't read that time — try 7, 730, 7:30p, 1930, now or 45m");
+    return null;
+  }
   if(!endVal && startVal && isViewingToday()) endVal = nowHHMM();
   const missing = [];
   if(!startVal) missing.push(startId);
@@ -1136,6 +1218,10 @@ function readRange(startId, endId){
     if(!endVal && startVal) showUndoToast('Add an end time — "now" only works when logging to today');
     return null;
   }
+  const isSleep = startId === 'bedInput';
+  const r = isSleep ? sleepRange(startVal, endVal, selectedDayKey) : parseTimeRange(startVal, endVal, selectedDayKey);
+  const problem = rangeProblem(isSleep ? r.bedDate : r.startDate, isSleep ? r.wakeDate : r.endDate, isSleep);
+  if(problem){ flagFields([/start time|bed time/.test(problem) ? startId : endId]); showUndoToast(problem); return null; }
   return { startVal, endVal };
 }
 
@@ -1156,6 +1242,32 @@ function selectDay(key){
 function shiftDay(delta){
   selectDay(keyMinusDays(selectedDayKey, -delta));
 }
+
+// Ctrl/⌘+Z: undo the last action. Inside a text box it stays the browser's
+// own typing undo. Esc: clear the box you're in; Esc again leaves it.
+// (Rename and timeline edits handle Esc themselves — it cancels the edit.)
+document.addEventListener('keydown', e => {
+  const el = e.target, tag = (el.tagName||'').toLowerCase();
+  const typing = tag==='textarea' || (tag==='input' && !['checkbox','color','file'].includes(el.type));
+  if((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase()==='z' && !typing){
+    e.preventDefault();
+    if(lastUndo && lastUndo.at === saveCount){
+      const { restore, message } = lastUndo;
+      restore();
+      document.getElementById('undoToast').style.display = 'none';
+      showUndoToast(`Undid: ${message}`);
+    } else showUndoToast('Nothing to undo');
+    return;
+  }
+  if(e.key==='Escape' && !e.defaultPrevented && (typing || tag==='select')){
+    if(typing && el.value){
+      el.value = '';
+      el.classList.remove('invalid');
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    } else el.blur();
+    e.preventDefault();
+  }
+});
 
 // ← / → step through days when you're not typing in a field.
 document.addEventListener('keydown', e => {
@@ -1246,9 +1358,74 @@ function updateAddButton(){
   const hasTimes = document.getElementById('newStart').value || document.getElementById('newEnd').value;
   document.getElementById('addQuestBtn').textContent = hasTimes ? 'Log it' : 'Add';
   const where = isViewingToday() ? 'today' : dayLabel(selectedDayKey);
-  document.getElementById('addHint').textContent = hasTimes
+  const guess = categoryGuess ? ` Category: ${categoryGuess.project}, from ${categoryGuess.why}.` : '';
+  document.getElementById('addHint').textContent = (hasTimes
     ? `Logs it as done ${isViewingToday() ? 'today' : 'on '+where}.`
-    : `Already did it? Add the times and it goes straight to Done.`;
+    : `Already did it? Add the times and it goes straight to Done.`) + guess;
+}
+
+// ---------------------------------------------------------------------------
+// Category from the title (add bar). First match wins:
+//   1. a title you've used before → the category it had last time
+//   2. a category's name inside the title ("orbitarm wiring" → OrbitArm),
+//      which is what makes a brand-new category work straight away
+//   3. same first word as earlier titles, if they agree on a category
+//   4. otherwise the category you used last
+// Picking from the dropdown yourself turns guessing off until the bar clears.
+// ---------------------------------------------------------------------------
+let categoryTouched = false;
+let categoryGuess = null; // { project, why } when the current pick came from the title
+
+const normTitle = t => String(t||'').toLowerCase().replace(/\s+/g, ' ').trim();
+
+function lastCategory(){
+  let c = null;
+  try{ c = localStorage.getItem('trackr-last-category'); }catch(e){}
+  return c && loggableProjects().some(p=>p.name===c) ? c : '';
+}
+
+function guessCategory(title){
+  const t = normTitle(title);
+  if(!t) return null;
+  const valid = new Set(loggableProjects().map(p=>p.name));
+  // Everything you've titled before, newest first, in categories that still exist.
+  const history = [];
+  state.quests.forEach(q => history.push({ t: normTitle(q.title), p: q.project, at: q.completedAt || q.createdDay || '' }));
+  Object.values(state.logs).forEach(day => (day||[]).forEach(l => history.push({ t: normTitle(l.title), p: l.project, at: l.end || l.ts || '' })));
+  const usable = history.filter(h => valid.has(h.p)).sort((a,b) => a.at < b.at ? 1 : a.at > b.at ? -1 : 0);
+
+  const exact = usable.find(h => h.t === t);
+  if(exact) return { project: exact.p, why: `last "${title.trim()}"` };
+
+  const padded = ` ${t} `;
+  const named = [...valid].sort((a,b) => b.length - a.length).find(n => padded.includes(` ${n.toLowerCase()} `));
+  if(named) return { project: named, why: `"${named}" in the title` };
+
+  const first = t.split(' ')[0];
+  if(first.length >= 3){
+    const hits = usable.filter(h => h.t.split(' ')[0] === first);
+    if(hits.length){
+      const top = hits[0].p, agree = hits.filter(h => h.p === top).length;
+      if(agree * 2 > hits.length) return { project: top, why: `earlier "${first}…" titles` };
+    }
+  }
+  return null;
+}
+
+function onTitleInput(){
+  const titleEl = document.getElementById('newTitle'), sel = document.getElementById('newProject');
+  if(!titleEl.value.trim()) categoryTouched = false;
+  if(categoryTouched){ updateAddButton(); return; }
+  categoryGuess = guessCategory(titleEl.value);
+  const pick = categoryGuess ? categoryGuess.project : lastCategory();
+  if(pick) sel.value = pick;
+  updateAddButton();
+}
+
+function onCategoryPicked(){
+  categoryTouched = true;
+  categoryGuess = null;
+  updateAddButton();
 }
 
 /** Adds a new quest in the "To do" column. If a time range is filled in, it
@@ -1260,6 +1437,7 @@ function addQuest(){
   const title = titleEl.value.trim();
   if(!title){ flagFields(['newTitle']); return; }
   const project = document.getElementById('newProject').value;
+  try{ localStorage.setItem('trackr-last-category', project); }catch(e){}
   const recurring = document.getElementById('newRecurring').checked;
   const hasTimes = document.getElementById('newStart').value || document.getElementById('newEnd').value;
 
@@ -1285,13 +1463,15 @@ function addQuest(){
       if(countsAsQuest(project)) state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
       if(templateId) ensureRecurringQuests();
     } else {
-      state.quests.push({ id, title, project, status:'todo', totalMins:0, completedAt:null, templateId });
+      state.quests.push({ id, title, project, status:'todo', totalMins:0, completedAt:null, templateId, createdDay: todayKey() });
     }
     titleEl.value = '';
     document.getElementById('newStart').value = '';
     document.getElementById('newEnd').value = '';
     document.getElementById('newRecurring').checked = false;
   });
+  categoryTouched = false;
+  categoryGuess = null;
   updateAddButton();
   titleEl.focus();
 }
@@ -1347,15 +1527,6 @@ function editKeydown(e, id){
 // "Done" (or dragging to Completed) is what actually finishes it.
 // To-do cards keep their start/end fields folded away until asked for, so
 // the board reads as a list of quests rather than a wall of time inputs.
-const openTimeRows = new Set();
-
-function toggleTimeRow(id){
-  if(openTimeRows.has(id)) openTimeRows.delete(id); else openTimeRows.add(id);
-  render();
-  const start = document.getElementById('qstart-'+id);
-  if(start) start.focus();
-}
-
 function logQuestTime(id){
   const q = state.quests.find(q=>q.id===id);
   if(!q) return;
@@ -1365,7 +1536,6 @@ function logQuestTime(id){
   const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
   document.getElementById('qstart-'+id).value = '';
   document.getElementById('qend-'+id).value = '';
-  openTimeRows.delete(id);
 
   withUndo(`Logged ${mins}m · ${q.title}${key===todayKey() ? '' : ' → '+dayLabel(key)}`, () => {
     addLog(key, { title:q.title, project:q.project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString(), questId:q.id });
@@ -1391,23 +1561,43 @@ function completeQuest(id){
   if(!q || q.status==='completed') return;
   if(state.timer && state.timer.questId===id) stopTimer();
   const key = selectedDayKey;
+  withUndo(`Completed "${q.title}"${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => markCompleted(id, key));
+}
 
-  withUndo(`Completed "${q.title}"${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => {
-    const live = state.quests.find(o=>o.id===id);
-    const whenISO = completionTimeFor(key, id);
-    if(live.templateId && key !== todayKey()){
-      const cloneId = uid();
-      let movedMins = 0;
-      (state.logs[key]||[]).forEach(l=>{ if(l.questId===id){ l.questId = cloneId; movedMins += l.actualMins||0; } });
-      live.totalMins = Math.max(0, (live.totalMins||0) - movedMins);
-      state.quests.push(Object.assign({}, live, { id:cloneId, status:'completed', totalMins:movedMins, completedAt:whenISO, completedDay:key }));
-    } else {
-      live.status = 'completed';
-      live.completedAt = whenISO;
-      live.completedDay = key;
-    }
-    if(countsAsQuest(live.project)) state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
+/** ✓ Done on a card: if start/end were typed, logs that session and
+ *  completes the quest as one undoable step; otherwise just completes it. */
+function finishQuest(id){
+  const q = state.quests.find(q=>q.id===id);
+  if(!q || q.status==='completed') return;
+  const startEl = document.getElementById('qstart-'+id), endEl = document.getElementById('qend-'+id);
+  if(!startEl || !(startEl.value.trim() || endEl.value.trim())) return completeQuest(id);
+  const range = readRange('qstart-'+id, 'qend-'+id);
+  if(!range) return;
+  const key = selectedDayKey;
+  const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
+  withUndo(`Logged ${mins}m · completed "${q.title}"${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => {
+    addLog(key, { title:q.title, project:q.project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts: endDate.toISOString(), questId:q.id });
+    q.totalMins = (q.totalMins||0) + mins;
+    markCompleted(id, key);
   });
+}
+
+/** The state change behind completing a quest on `key` (no undo/render). */
+function markCompleted(id, key){
+  const live = state.quests.find(o=>o.id===id);
+  const whenISO = completionTimeFor(key, id);
+  if(live.templateId && key !== todayKey()){
+    const cloneId = uid();
+    let movedMins = 0;
+    (state.logs[key]||[]).forEach(l=>{ if(l.questId===id){ l.questId = cloneId; movedMins += l.actualMins||0; } });
+    live.totalMins = Math.max(0, (live.totalMins||0) - movedMins);
+    state.quests.push(Object.assign({}, live, { id:cloneId, status:'completed', totalMins:movedMins, completedAt:whenISO, completedDay:key }));
+  } else {
+    live.status = 'completed';
+    live.completedAt = whenISO;
+    live.completedDay = key;
+  }
+  if(countsAsQuest(live.project)) state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
 }
 
 /** Whether completing a quest in this category earns a rarity point —
@@ -1441,6 +1631,7 @@ function uncompleteQuest(id){
       return;
     }
     live.status = 'todo';
+    live.keptDay = todayKey(); // reopened on purpose — not a leftover
     live.completedAt = null;
     live.completedDay = null;
     live.totalMins = 0;
@@ -1467,6 +1658,58 @@ function onDrop(e, targetStatus){
   draggedQuestId = null;
   if(targetStatus === 'completed') completeQuest(id);
   else uncompleteQuest(id);
+}
+
+// ---------------------------------------------------------------------------
+// Leftovers — to-dos added on an earlier day that are still open. Once a day
+// they're listed above the board so each one is a deliberate keep or drop
+// instead of quietly piling up. Daily (recurring) quests are left out.
+// ---------------------------------------------------------------------------
+
+/** "from yesterday" / "from Mon" / "9 days old" for a to-do added before today, else ''. */
+function leftoverAge(q){
+  const today = todayKey();
+  if(q.status!=='todo' || !q.createdDay || q.createdDay >= today) return '';
+  const days = Math.round((dayDate(today) - dayDate(q.createdDay)) / 86400000);
+  if(days === 1) return 'from yesterday';
+  if(days < 7) return 'from ' + dayDate(q.createdDay).toLocaleDateString([], {weekday:'short'});
+  return days + ' days old';
+}
+
+function leftoverQuests(){
+  const today = todayKey();
+  return state.quests.filter(q => !q.templateId && leftoverAge(q) && q.keptDay !== today);
+}
+
+function renderLeftovers(){
+  const el = document.getElementById('leftovers');
+  const list = isViewingToday() ? leftoverQuests() : [];
+  if(!list.length){ el.innerHTML = ''; el.classList.remove('show'); return; }
+  el.classList.add('show');
+  el.innerHTML = `
+    <div class="lo-head">
+      <span><b>${list.length}</b> to-do${list.length===1?'':'s'} from earlier · still on?</span>
+      <button class="small primary" onclick="keepAllLeftovers()">Keep all</button>
+    </div>
+    ${list.map(q => `<div class="lo-row" style="--tag-color:${colorFor(q.project)}">
+      <span class="lo-title">${escapeHtml(q.title)}</span>
+      <span class="lo-age">${leftoverAge(q)}</span>
+      <button class="small" onclick="keepLeftover('${q.id}')">Keep</button>
+      <button class="small" onclick="removeQuest('${q.id}')">Drop</button>
+    </div>`).join('')}`;
+}
+
+function keepLeftover(id){
+  const q = state.quests.find(q=>q.id===id);
+  if(!q) return;
+  q.keptDay = todayKey();
+  save(); render();
+}
+
+function keepAllLeftovers(){
+  const today = todayKey();
+  leftoverQuests().forEach(q => q.keptDay = today);
+  save(); render();
 }
 
 function removeQuest(id){
@@ -1527,8 +1770,8 @@ function logEditKeydown(e, key, id){
 function saveLogEdit(key, id){
   const l = (state.logs[key]||[]).find(l=>l.id===id);
   if(!l) return;
-  const startVal = document.getElementById('logEditStart').value;
-  const endVal = document.getElementById('logEditEnd').value;
+  const startVal = readTime('logEditStart');
+  const endVal = readTime('logEditEnd');
   const missing = [];
   if(!startVal) missing.push('logEditStart');
   if(!endVal) missing.push('logEditEnd');
@@ -1541,6 +1784,8 @@ function saveLogEdit(key, id){
   } else {
     ({ startDate, endDate, mins } = parseTimeRange(startVal, endVal, key));
   }
+  const problem = rangeProblem(startDate, endDate, l.project==='Sleep');
+  if(problem){ flagFields([/start time|bed time/.test(problem) ? 'logEditStart' : 'logEditEnd']); showUndoToast(problem); return; }
 
   editingLogId = null;
   withUndo(`Updated "${l.title}" to ${fmtTime(startDate)} – ${fmtTime(endDate)}`, () => {
@@ -1636,7 +1881,7 @@ function renderTimerCheck(){
     <button onclick="keepTimer()">Still going</button>
     <button onclick="stopTimer()">Stop now</button>
     <span class="hint">or it ended at</span>
-    <input type="time" id="timerCheckEnd" value="${hhmmOf(guess)}" onkeydown="if(event.key==='Enter') stopTimerAt()"/>
+    <input type="text" autocomplete="off" spellcheck="false" class="tin" id="timerCheckEnd" value="${formatTime12(hhmmOf(guess))}" onkeydown="if(event.key==='Enter') stopTimerAt()"/>
     <button class="primary" onclick="stopTimerAt()">Log until then</button>`;
   el.classList.add('show');
 }
@@ -1651,9 +1896,10 @@ function keepTimer(){
  *  clock time after the timer started), instead of now. */
 function stopTimerAt(){
   const t = state.timer, input = document.getElementById('timerCheckEnd');
-  if(!t || !input.value){ flagFields(['timerCheckEnd']); return; }
+  const val = input ? readTime(input) : null;
+  if(!t || !val){ flagFields(['timerCheckEnd']); return; }
   const start = new Date(t.start);
-  const [h, m] = input.value.split(':').map(Number);
+  const [h, m] = val.split(':').map(Number);
   const end = new Date(start);
   end.setHours(h, m, 0, 0);
   while(end <= start) end.setDate(end.getDate()+1);
@@ -1762,8 +2008,8 @@ function renderSleepTile(key){
 
   const bed = document.getElementById('bedInput'), wake = document.getElementById('wakeInput');
   if(sleepInputsKey !== key || (!bed.value && !wake.value)){
-    bed.value = usual ? usual.bed : '';
-    wake.value = usual ? usual.wake : '';
+    bed.value = usual ? formatTime12(usual.bed) : '';
+    wake.value = usual ? formatTime12(usual.wake) : '';
     sleepInputsKey = key;
   }
   document.getElementById('logSleepBtn').textContent = logged ? 'Update' : 'Log';
@@ -2011,7 +2257,7 @@ function cardHTML(q){
 
   if(q.id === editingQuestId){
     return `<div class="card" style="--tag-color:${color}">
-      <input type="text" id="editTitle-${q.id}" value="${escapeHtml(q.title)}" style="width:100%;margin-bottom:6px;" onkeydown="editKeydown(event,'${q.id}')"/>
+      <input type="text" autocomplete="off" id="editTitle-${q.id}" value="${escapeHtml(q.title)}" style="width:100%;margin-bottom:6px;" onkeydown="editKeydown(event,'${q.id}')"/>
       <select id="editProject-${q.id}" style="width:100%;" onkeydown="editKeydown(event,'${q.id}')">${projectOptionsHTML(q.project)}</select>
       <div class="card-actions">
         <button class="primary" onclick="saveEditQuest('${q.id}')">Save</button>
@@ -2030,30 +2276,28 @@ function cardHTML(q){
 
   if(q.status === 'todo'){
     const timing = state.timer && state.timer.kind==='quest' && state.timer.questId===q.id;
-    const open = openTimeRows.has(q.id);
     let timerBtn = '';
     if(timing) timerBtn = `<button class="primary" onclick="stopTimer()" title="Stop and log this session"><span class="timer-dot" style="display:inline-block;margin-right:6px;"></span>■ <span class="timer-elapsed"></span></button>`;
     else if(isViewingToday()) timerBtn = `<button onclick="startTimer('quest','${q.id}')" title="Time it live">▶ Start</button>`;
-    const timeRow = open ? `<div class="row" style="margin-top:8px;gap:6px;">
-        <input type="time" id="qstart-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" oninput="autoAdvanceTime(event,'qend-${q.id}')" onkeydown="handleTimeBackspace(event)" title="Started"/>
+    // Times sit right on the card: type them and press Enter (or ✓ Done) to log
+    // the session and finish the quest in one go; "Log only" keeps it open.
+    const timeFields = timing ? '' : `
+        <input type="text" autocomplete="off" spellcheck="false" class="tin qtime" data-next="qend-${q.id}" id="qstart-${q.id}" placeholder="start" onkeydown="handleTimeBackspace(event)" title="Already did it? When it started — 7, 730, 7:30p or now"/>
         <span class="arrow">→</span>
-        <input type="time" id="qend-${q.id}" style="width:100px;padding:6px 8px;font-size:12px;" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ logQuestTime('${q.id}'); })" title="Finished — leave empty for now (today only)"/>
-        <button class="small primary" onclick="logQuestTime('${q.id}')">Log</button>
-      </div>` : '';
+        <input type="text" autocomplete="off" spellcheck="false" class="tin qtime" data-kind="end" data-pair="qstart-${q.id}" id="qend-${q.id}" placeholder="end" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ finishQuest('${q.id}'); })" title="When it ended, or how long (45m, 1h). Empty = now (today only). Enter logs it and marks it done"/>`;
     return `<div class="card ${timing?'timing':''}" style="--tag-color:${color}" draggable="true" ondragstart="onDragStart(event,'${q.id}')">
       <div class="card-top">
         <div class="card-title">${escapeHtml(q.title)}</div>
         ${icons}
       </div>
       <div class="card-meta">
-        <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m so far' : ''}</span>
+        <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m so far' : ''}${leftoverAge(q) ? '<span class="age"> · '+leftoverAge(q)+'</span>' : ''}</span>
         ${recurTag}
       </div>
-      ${timeRow}
       <div class="card-actions">
-        ${timerBtn}
-        <button class="primary" onclick="completeQuest('${q.id}')">✓ Done</button>
-        <button class="${open?'on':''}" onclick="toggleTimeRow('${q.id}')" title="Log time spent without finishing it">+ Time</button>
+        ${timerBtn}${timeFields}
+        <button class="primary" onclick="finishQuest('${q.id}')" title="Mark it done — logs the times too if you typed them">✓ Done</button>
+        <button class="log-only" onclick="logQuestTime('${q.id}')" title="Log these times but keep the quest open">Log only</button>
       </div>
     </div>`;
   }
@@ -2639,25 +2883,110 @@ function escapeHtml(s){
 // Shared time-input UX helpers (used by quest cards, sleep, and rotting)
 // ---------------------------------------------------------------------------
 
-// Moves focus to the next field once a time input is fully typed (HH:MM).
-function autoAdvanceTime(e, nextId){
-  if(e.target.value && e.target.value.length === 5){
-    const next = document.getElementById(nextId);
-    if(next) next.focus();
+// Time fields are plain text boxes (class "tin") that take whatever is quick
+// to type: 7, 730, 7:30, 7.30p, 7pm, 1930, now — and in an end field, a
+// duration like 45m, 1h, 1h30 or +90. Bare hours get AM/PM worked out:
+//   end fields  → the first matching time after their start (data-pair)
+//   bed         → evening for 6–11, small hours for 12–5
+//   otherwise   → the latest matching time that has already happened today
+//                 (on past days: 7–11 morning, 12–6 afternoon)
+// On blur the field is rewritten as "7:30 PM" so you can see what it read.
+
+const toHHMM = mins => { mins = ((mins % 1440) + 1440) % 1440; return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0'); };
+const minsOf = hhmm => { const [h,m] = hhmm.split(':').map(Number); return h*60+m; };
+
+/** Parses typed text for a time field. Returns 'HH:MM', '' for empty, or
+ *  null when it can't be read. */
+function parseTypedTime(raw, el){
+  const txt = String(raw||'').trim().toLowerCase().replace(/\s+/g,'');
+  if(!txt) return '';
+  if(txt==='now' || txt==='n') return nowHHMM();
+  const kind = el && el.dataset.kind;
+  const pairEl = el && el.dataset.pair ? document.getElementById(el.dataset.pair) : null;
+  const pairVal = pairEl ? readTime(pairEl) : '';
+
+  // Duration (end fields only): 45m, 1h, 1h30, 1.5h, +90
+  const dur = txt.match(/^\+(\d+)$/) || txt.match(/^(?:(\d+(?:\.\d+)?)h)?(?:(\d+)m?)?$/);
+  if(kind==='end' && pairVal && dur && (txt.startsWith('+') || /[hm]/.test(txt))){
+    const mins = txt.startsWith('+') ? Number(dur[1]) : Math.round(Number(dur[1]||0)*60) + Number(dur[2]||0);
+    if(mins > 0) return toHHMM(minsOf(pairVal) + mins);
   }
+
+  const m = txt.match(/^(\d{1,2})(?:[:.]?(\d{2}))?([ap])?\.?(?:m\.?)?$/);
+  if(!m) return null;
+  let h = Number(m[1]); const min = Number(m[2]||0); const ap = m[3];
+  if(min > 59) return null;
+  if(ap){
+    if(h < 1 || h > 12) return null;
+    return toHHMM((h%12 + (ap==='p' ? 12 : 0))*60 + min);
+  }
+  if(h > 23) return null;
+  if(h === 0 || h >= 13 || m[1].length === 2 && m[1][0] === '0') return toHHMM(h*60 + min);
+
+  // Bare 1–12: pick AM or PM.
+  const am = (h%12)*60 + min, pm = am + 720;
+  if(kind==='end' && pairVal){
+    const s = minsOf(pairVal), fwd = t => ((t - s) % 1440 + 1440) % 1440 || 1440;
+    return toHHMM(fwd(am) <= fwd(pm) ? am : pm);
+  }
+  if(kind==='bed') return toHHMM(h >= 6 && h <= 11 ? pm : am);
+  if(isViewingToday()){
+    // Compare on the logical day (5am → 5am) so 1 after midnight reads as 1 AM.
+    const logical = t => (t - 300 + 1440) % 1440;
+    const now = logical(minsOf(nowHHMM()));
+    const past = [am, pm].filter(t => logical(t) <= now);
+    if(past.length) return toHHMM(past.sort((a,b)=>logical(b)-logical(a))[0]);
+    return toHHMM(logical(am) < logical(pm) ? am : pm);
+  }
+  return toHHMM(h >= 7 && h <= 11 ? am : pm);
 }
 
-// Backspace clears the whole time value in one press (instead of fiddling with
-// one segment at a time) — and if the field is already empty, backspace jumps
-// back to the previous field, so the start/end pair feels like one line you're
-// typing and can backspace straight through.
+/** Reads a time field (element or id) as 'HH:MM', '' when empty, null if unreadable. */
+function readTime(elOrId){
+  const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  return el ? parseTypedTime(el.value, el) : '';
+}
+
+/** Rewrites a time field as "7:30 PM" once it's readable (leaves typos for you to fix). */
+function tidyTimeField(el){
+  const v = readTime(el);
+  if(v) el.value = formatTime12(v);
+  else if(v === null) el.classList.add('invalid');
+}
+
+document.addEventListener('focusout', e => {
+  if(e.target.classList && e.target.classList.contains('tin')) tidyTimeField(e.target);
+});
+
+// In a start field, Enter / Space / typing a full time (1930, 7:30pm) jumps to its end field.
+document.addEventListener('keydown', e => {
+  const el = e.target;
+  if(!el.classList || !el.classList.contains('tin') || !el.dataset.next) return;
+  if((e.key==='Enter' || e.key===' ') && el.value.trim()){
+    e.preventDefault();
+    const next = document.getElementById(el.dataset.next);
+    if(next) next.focus();
+  }
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if(!el.classList || !el.classList.contains('tin') || !el.dataset.next) return;
+  const v = el.value.trim().toLowerCase();
+  if(/^\d{4}$/.test(v) || /\d[ap]\.?m\.?$/.test(v)){
+    const next = document.getElementById(el.dataset.next);
+    if(next) next.focus();
+  }
+});
+
+// Backspace on a tidied time ("7:30 PM") clears it in one press; on an empty
+// field it hops back to the start field, so a start/end pair types like one line.
 function handleTimeBackspace(e, prevId){
   if(e.key !== 'Backspace') return;
-  if(e.target.value){
+  if(/[ap]m$/i.test(e.target.value)){
     e.preventDefault();
     e.target.value = '';
     if(e.target.id==='newStart' || e.target.id==='newEnd') updateAddButton();
-  } else if(prevId){
+  } else if(!e.target.value && prevId){
     const prev = document.getElementById(prevId);
     if(prev){ e.preventDefault(); prev.focus(); }
   }
@@ -3080,6 +3409,187 @@ function renderBackupAge(){
 }
 
 /** Remembers whether Settings was left open (a per-browser convenience). */
+// ---------------------------------------------------------------------------
+// Trends — one 14-day chart in the Health section, switched with tabs.
+// Y axis (set in Settings): "amount" draws a bar per day against its goal;
+// "time" draws when it happened (bed → wake, workout and session times).
+// ---------------------------------------------------------------------------
+const TREND_DAYS = 14;
+
+/** A day's logs (matching `pred`) as minutes from that day's midnight;
+ *  last night's sleep comes out negative (11 PM = -60). */
+function logSpans(key, pred){
+  const midnight = dayDate(key).getTime();
+  return (state.logs[key]||[]).filter(l => l.start && l.end && pred(l)).map(l => ({
+    s: (new Date(l.start).getTime() - midnight) / 60000,
+    e: (new Date(l.end).getTime() - midnight) / 60000,
+    color: colorFor(l.project), title: l.title
+  }));
+}
+
+const TREND_METRICS = {
+  sleep:   { label:'Sleep',   amount: k => sleepHoursFor(k), goal: () => state.goals.sleepHours, fmt: v => v+'h',
+             spans: k => logSpans(k, l => l.project==='Sleep'), defaultRange: [-180, 600], gapWhenZero: true },
+  fitness: { label:'Fitness', amount: k => fitnessMinsFor(k), goal: () => state.goals.fitnessMins, fmt: v => v+'m',
+             spans: k => logSpans(k, l => isFitnessProject(l.project)), defaultRange: [360, 1320] },
+  quests:  { label:'Quests',  amount: k => state.completedCounts[k]||0, goal: () => 4, fmt: v => String(v) },
+  logged:  { label:'Logged',  amount: k => Math.round(dayStats(k).mins/6)/10, fmt: v => v+'h',
+             spans: k => logSpans(k, l => l.project!=='Sleep'), byCategory: true, defaultRange: [420, 1440] },
+  rarity:  { label:'Rarity',  amount: k => dayRarity(k).tier, fmt: v => RARITY_TIERS[v].name }
+};
+
+function trendMetric(){
+  let m = null;
+  try{ m = localStorage.getItem('trackr-trend'); }catch(e){}
+  return TREND_METRICS[m] ? m : 'sleep';
+}
+
+function setTrendMetric(m){
+  try{ localStorage.setItem('trackr-trend', m); }catch(e){}
+  renderTrends();
+}
+
+function setTrendAxis(v){
+  state.goals.trendAxis = v === 'time' ? 'time' : 'amount';
+  save(); renderTrends();
+}
+
+/** "11p", "7a", "12p" for minutes from midnight (wraps past a day either way). */
+function shortClock(mins){
+  const m = ((Math.round(mins) % 1440) + 1440) % 1440, h = Math.floor(m/60), mm = m % 60;
+  return (h%12 || 12) + (mm ? ':'+String(mm).padStart(2,'0') : '') + (h < 12 ? 'a' : 'p');
+}
+
+function renderTrends(){
+  const metricKey = trendMetric(), M = TREND_METRICS[metricKey];
+  const axisPref = state.goals.trendAxis === 'time' ? 'time' : 'amount';
+  const axis = axisPref === 'time' && M.spans ? 'time' : 'amount';
+  const sel = document.getElementById('trendAxisSelect');
+  if(sel) sel.value = axisPref;
+
+  document.getElementById('trendTabs').innerHTML = Object.entries(TREND_METRICS).map(([k, m]) =>
+    `<button class="trend-tab ${k===metricKey?'on':''}" onclick="setTrendMetric('${k}')">${m.label}</button>`).join('');
+
+  const today = todayKey(), oldest = keyMinusDays(today, DAYS_BACK);
+  const keys = Array.from({length: TREND_DAYS}, (_, i) => keyMinusDays(today, TREND_DAYS-1-i));
+  const W = 300, H = 150, L = 28, R = 4, T = 6, B = 16;
+  const slot = (W - L - R) / TREND_DAYS, bw = slot * 0.58;
+  const x = i => L + i*slot + (slot-bw)/2;
+  let svg = '';
+
+  // X axis: weekday initials, selected day in gold; the whole column is clickable.
+  keys.forEach((k, i) => {
+    const d = dayDate(k), cls = k===selectedDayKey ? 'sel' : '';
+    svg += `<text class="${cls}" x="${x(i)+bw/2}" y="${H-4}" text-anchor="middle">${d.toLocaleDateString([], {weekday:'narrow'})}</text>`;
+  });
+
+  const values = keys.map(k => M.amount(k));
+  const withData = values.filter(v => v > 0);
+  const avg = withData.length ? withData.reduce((a,b)=>a+b, 0) / withData.length : 0;
+
+  // Dot color = how the day did: gold met the goal, red fell short, hollow
+  // = nothing logged. Rarity dots use their tier color; Logged has no goal.
+  const MET = 'var(--gold)', SHORT = 'var(--red)';
+  const dot = (cx, cy, fill, k, hollow) => {
+    const big = k === selectedDayKey;
+    return hollow
+      ? `<circle cx="${cx}" cy="${cy}" r="${big?3.2:2.4}" fill="var(--panel)" stroke="var(--border-strong)" stroke-width="1"/>`
+      : `<circle cx="${cx}" cy="${cy}" r="${big?3.6:2.6}" fill="${fill}"${big ? ' stroke="var(--text)" stroke-width="1"' : ''}/>`;
+  };
+  // Joins points with a line, breaking it wherever a point is null.
+  const line = (pts, cls) => {
+    let d = '', pen = false;
+    pts.forEach(p => { if(!p){ pen = false; return; } d += (pen ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); pen = true; });
+    return d ? `<path class="${cls||'trend-line'}" d="${d}"/>` : '';
+  };
+  const cx = i => L + i*slot + slot/2;
+  const hit = (k, i, tip) => `<rect class="hit" x="${L+i*slot}" y="${T}" width="${slot}" height="${H-T-B}"><title>${escapeHtml(tip)}</title></rect>`;
+
+  if(axis === 'amount'){
+    const goal = M.goal ? M.goal() : 0;
+    const isRarity = metricKey === 'rarity';
+    const max = isRarity ? RARITY_TIERS.length - 1 : Math.max(goal * 1.15, ...values, 1);
+    // Sleep never sits near 0, so zoom to the range you actually sleep
+    // (a blank night is a hollow dot on the floor); counts keep a 0 baseline.
+    const present = values.filter(v => v > 0);
+    const min = M.gapWhenZero && present.length ? Math.max(0, Math.floor(Math.min(...present, goal || Infinity) - 1)) : 0;
+    const y = v => T + 3 + (H-T-B-6) * (1 - (Math.max(v, min) - min)/(max - min));
+    svg += `<line class="axis" x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}"/>`;
+    if(isRarity){
+      RARITY_TIERS.forEach((t, v) => {
+        svg += `<line class="grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/>`;
+        svg += `<text x="${L-4}" y="${y(v)+3}" text-anchor="end">${t.name.slice(0,3)}</text>`;
+      });
+    } else {
+      svg += `<text x="${L-4}" y="${y(min)+3}" text-anchor="end">${min ? M.fmt(min) : 0}</text>`;
+      svg += `<text x="${L-4}" y="${y(max)+3}" text-anchor="end">${M.fmt(Math.round(max*10)/10)}</text>`;
+    }
+    if(goal){
+      svg += `<line class="goal" x1="${L}" x2="${W-R}" y1="${y(goal)}" y2="${y(goal)}"/>`;
+      svg += `<text class="goal-label" x="${L-4}" y="${y(goal)+3}" text-anchor="end">${M.fmt(goal)}</text>`;
+    }
+    const missing = v => M.gapWhenZero && !v;
+    svg += line(keys.map((k, i) => missing(values[i]) ? null : [cx(i), y(values[i])]));
+    keys.forEach((k, i) => {
+      const v = values[i];
+      const fill = isRarity ? RARITY_TIERS[v].color : !goal ? MET : v >= goal ? MET : SHORT;
+      svg += `<g class="col ${k>=oldest?'pick':''}" onclick="selectDay('${k}')">${hit(k, i, `${dayLabel(k)} · ${missing(v) ? 'not logged' : M.fmt(v)}`)}${dot(cx(i), y(missing(v) ? min : v), fill, k, missing(v))}</g>`;
+    });
+    document.getElementById('trendSummary').textContent = !withData.length ? '' :
+      isRarity ? 'avg ' + RARITY_TIERS[Math.round(values.reduce((a,b)=>a+b,0)/values.length)].name
+               : 'avg ' + M.fmt(Math.round(avg*10)/10);
+    const legend = isRarity ? 'Dot color = that day’s tier.'
+      : goal ? `Gold = hit ${M.fmt(goal)}, red = short${M.gapWhenZero ? ', hollow = not logged' : ''}.` : 'Time logged each day.';
+    document.getElementById('trendNote').textContent =
+      (axisPref === 'time' && !M.spans ? `${M.label} has no time of day, so this shows amounts. ` : '') + legend + ' Click a day to open it.';
+  } else {
+    // Time of day, downward like a calendar.
+    const spans = keys.map(k => M.spans(k));
+    const all = spans.flat();
+    let lo = all.length ? Math.min(...all.map(s=>s.s)) : M.defaultRange[0];
+    let hi = all.length ? Math.max(...all.map(s=>s.e)) : M.defaultRange[1];
+    lo = Math.floor(lo/60)*60; hi = Math.ceil(hi/60)*60;
+    if(hi - lo < 360){ const mid = (lo+hi)/2; lo = Math.floor((mid-180)/60)*60; hi = lo + 360; }
+    const y = m => T + 3 + (H-T-B-6) * (m - lo) / (hi - lo);
+    const step = (hi - lo) <= 720 ? 120 : (hi - lo) <= 1080 ? 180 : 360;
+    for(let m = Math.ceil(lo/step)*step; m <= hi; m += step){
+      svg += `<line class="grid" x1="${L}" x2="${W-R}" y1="${y(m)}" y2="${y(m)}"/>`;
+      svg += `<text x="${L-4}" y="${y(m)+3}" text-anchor="end">${shortClock(m)}</text>`;
+    }
+    const goal = M.goal ? M.goal() : 0;
+    // Sleep (one block a night) gets a bedtime line and a wake line; other
+    // metrics can have several sessions a day, so each is just a stem + dots.
+    const firstOf = d => d.length ? d.reduce((a,b) => a.s <= b.s ? a : b) : null;
+    const lastOf = d => d.length ? d.reduce((a,b) => a.e >= b.e ? a : b) : null;
+    if(metricKey==='sleep'){
+      svg += line(spans.map((d, i) => d.length ? [cx(i), y(firstOf(d).s)] : null));
+      svg += line(spans.map((d, i) => d.length ? [cx(i), y(lastOf(d).e)] : null));
+    }
+    keys.forEach((k, i) => {
+      const d = spans[i];
+      const v = values[i];
+      const dayFill = !goal ? MET : v >= goal ? MET : SHORT;
+      const tip = d.map(s => `${shortClock(s.s)}–${shortClock(s.e)}${M.byCategory ? ' '+s.title : ''}`).join(', ') || 'nothing logged';
+      let marks = d.map(s => `<line class="stem" x1="${cx(i)}" x2="${cx(i)}" y1="${y(s.s)}" y2="${y(s.e)}"${M.byCategory ? ` style="stroke:${s.color}"` : ''}/>`).join('');
+      marks += d.map(s => {
+        const fill = M.byCategory ? s.color : dayFill;
+        return dot(cx(i), y(s.s), fill, k) + dot(cx(i), y(s.e), fill, k);
+      }).join('');
+      svg += `<g class="col ${k>=oldest?'pick':''}" onclick="selectDay('${k}')">${hit(k, i, dayLabel(k)+' · '+tip)}${marks}</g>`;
+    });
+    const firsts = spans.filter(d=>d.length).map(d => firstOf(d).s);
+    const lasts = spans.filter(d=>d.length).map(d => lastOf(d).e);
+    const mean = a => a.reduce((x,y)=>x+y,0) / a.length;
+    document.getElementById('trendSummary').textContent = firsts.length ? `avg ${shortClock(Math.round(mean(firsts)/5)*5)} → ${shortClock(Math.round(mean(lasts)/5)*5)}` : '';
+    document.getElementById('trendNote').textContent =
+      metricKey==='sleep' ? `Top line = bedtime, bottom = wake. Gold = ${M.fmt(goal)}+ that night, red = short.`
+      : M.byCategory ? 'Each session, colored by category.'
+      : `Each workout. Gold = day hit ${M.fmt(goal)}, red = short.`;
+    document.getElementById('trendNote').textContent += ' Click a day to open it.';
+  }
+  document.getElementById('trendChart').innerHTML = svg;
+}
+
 function rememberSettingsOpen(open){
   try{ localStorage.setItem('trackr-settings-open', open ? '1' : ''); }catch(e){}
 }
@@ -3162,6 +3672,8 @@ function render(){
   renderDayBar();
   renderRarityStrip(key);
   renderTimerCheck();
+  renderLeftovers();
+  renderTrends();
   renderBackupAge();
   renderCategoryChips();
   renderHistory();
@@ -3173,7 +3685,7 @@ function render(){
   // Board: outstanding quests are shared across days; Completed shows what
   // was finished on the selected day.
   const typed = {};
-  document.querySelectorAll('#col-todo input[type=time]').forEach(i => { if(i.value) typed[i.id] = i.value; });
+  document.querySelectorAll('#col-todo input.tin').forEach(i => { if(i.value) typed[i.id] = i.value; });
 
   const cols = {
     todo: state.quests.filter(q=>q.status==='todo'),
@@ -3222,9 +3734,9 @@ function render(){
         return `<div class="logrow editing">
           ${name}
           <span class="lright">
-            <input type="time" id="logEditStart" value="${hhmmOf(l.start||l.ts)}" onkeydown="logEditKeydown(event,'${key}','${l.id}')" oninput="autoAdvanceTime(event,'logEditEnd')"/>
+            <input type="text" autocomplete="off" spellcheck="false" class="tin" id="logEditStart" value="${formatTime12(hhmmOf(l.start||l.ts))}" onkeydown="logEditKeydown(event,'${key}','${l.id}')"/>
             <span class="arrow">→</span>
-            <input type="time" id="logEditEnd" value="${hhmmOf(l.end||l.ts)}" onkeydown="logEditKeydown(event,'${key}','${l.id}')"/>
+            <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="logEditStart" id="logEditEnd" value="${formatTime12(hhmmOf(l.end||l.ts))}" onkeydown="logEditKeydown(event,'${key}','${l.id}')"/>
             <button class="small primary" onclick="saveLogEdit('${key}','${l.id}')">Save</button>
             <button class="small" onclick="cancelLogEdit()">Cancel</button>
           </span>
@@ -3246,7 +3758,13 @@ function render(){
 }
 
 // Enter-to-submit for the two plain text inputs (quest title, new category name)
-document.getElementById('newTitle').addEventListener('keydown', e => { if(e.key==='Enter') addQuest(); });
+document.getElementById('newTitle').addEventListener('keydown', e => {
+  if(e.key==='Enter') addQuest();
+  // The category was matched from the title, so Tab goes straight to the
+  // start time. With no match it stops at the dropdown as usual.
+  if(e.key==='Tab' && !e.shiftKey && categoryGuess){ e.preventDefault(); document.getElementById('newStart').focus(); }
+});
+document.getElementById('newTitle').addEventListener('input', onTitleInput);
 document.getElementById('newCatName').addEventListener('keydown', e => { if(e.key==='Enter') addCategory(); });
 
 // Boot the app. If anything throws during load (e.g. unexpectedly malformed
