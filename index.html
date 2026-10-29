@@ -96,7 +96,7 @@
   /* ---- Long-running timer check ---- */
   .timer-check{
     display:none;flex-wrap:wrap;align-items:center;gap:8px;margin:-14px 0 22px;padding:10px 12px;
-    border:1px solid var(--gold-dim);border-radius:3px;
+    border:1px solid var(--gold-dim);border-radius:2px;
     font-family:'DM Mono',monospace;font-size:11px;color:var(--text);
   }
   .timer-check.show{display:flex;}
@@ -111,7 +111,7 @@
     flex:1;min-width:42px;display:flex;flex-direction:column;align-items:center;gap:1px;
     padding:5px 4px 4px;background:var(--panel);border:1px solid var(--border);
     border-bottom:2px solid var(--pill-rarity,var(--border));
-    font-size:9px;letter-spacing:1px;color:var(--text-mute);
+    font-size:10px;letter-spacing:1px;color:var(--text-mute);
   }
   .daypill .dnum{font-family:'DM Serif Display',serif;font-size:16px;letter-spacing:0;color:var(--text);text-transform:none;}
   .daypill.active{border-color:var(--gold);border-bottom-color:var(--pill-rarity,var(--gold));background:var(--panel-2);color:var(--gold);}
@@ -160,7 +160,7 @@
   .board{
     display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:36px;
   }
-  .col{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:14px;min-height:120px;transition:border-color 0.15s, background 0.15s;}
+  .col{background:var(--panel);border:1px solid var(--border);border-radius:2px;padding:14px;min-height:120px;transition:border-color 0.15s, background 0.15s;}
   .col.dragover{border-color:var(--gold);background:var(--panel-2);}
   .card{cursor:grab;}
   .card:active{cursor:grabbing;}
@@ -190,7 +190,7 @@
   .card-actions .log-only{display:none;border-style:dashed;}
   .card:has(.qtime:not(:placeholder-shown)) .log-only{display:inline-block;}
   .empty{color:var(--text-mute);font-size:12px;font-style:italic;}
-  .recur-tag{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-mute);cursor:pointer;border:1px solid var(--border);border-radius:2px;padding:1px 5px;}
+  .recur-tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);cursor:pointer;border:1px solid var(--border);border-radius:2px;padding:1px 5px;}
   .recur-tag:hover{color:var(--red);border-color:var(--red);}
 
   /* ---- Live timers (quests + rotting) ---- */
@@ -216,7 +216,7 @@
   .chip button{border:none;background:none;padding:0 0 0 4px;font-size:12px;color:var(--text-mute);}
   .chip button:hover{color:var(--red);}
   .chip .chip-fit{
-    font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:1px 5px;margin-left:2px;
+    font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;padding:1px 5px;margin-left:2px;
     border:1px solid var(--border);border-radius:2px;color:var(--text-mute);
   }
   .chip .chip-fit.on{border-color:var(--green);color:var(--green);}
@@ -232,11 +232,11 @@
   .clock-face{fill:var(--panel);stroke:var(--border);stroke-width:1;}
   .clock-hole{fill:var(--bg);}
   .clock-center-big{font-family:'DM Serif Display',serif;font-size:13px;fill:var(--text);}
-  .clock-center-small{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;fill:var(--text-mute);}
+  .clock-center-small{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;fill:var(--text-mute);}
   .clock-tick{stroke:var(--border-strong);stroke-width:1;}
-  .clock-hournum{font-family:'DM Mono',monospace;font-size:9px;fill:var(--text-mute);}
+  .clock-hournum{font-family:'DM Mono',monospace;font-size:10px;fill:var(--text-mute);}
   .clock-arc{cursor:pointer;opacity:0.92;transition:opacity 0.1s, filter 0.1s;}
-  .clock-arc:hover{opacity:1;filter:brightness(1.25);}
+  .clock-arc:hover{opacity:1;}
   .clock-arc-ics{pointer-events:none;fill:none;stroke:var(--text-mute);stroke-width:2;stroke-dasharray:3,3;opacity:0.8;transition:opacity 0.1s;}
   .clock-arc-ics.hover{opacity:1;stroke:var(--text);stroke-width:3;}
   .clock-arc-ics.attended{stroke-dasharray:none;stroke-width:3;opacity:1;}
@@ -248,7 +248,7 @@
   .block-tooltip{
     position:fixed;pointer-events:none;background:var(--panel-2);border:1px solid var(--gold-dim);
     border-radius:2px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);
-    z-index:1000;display:none;max-width:220px;box-shadow:0 6px 16px rgba(0,0,0,0.5);
+    z-index:1000;display:none;max-width:220px;box-shadow:0 4px 12px rgba(0,0,0,0.35);
   }
   .block-tooltip .tt-title{color:var(--gold);font-weight:500;margin-bottom:3px;font-family:'Outfit',sans-serif;font-size:12px;}
   .block-tooltip .tt-time{color:var(--text-mute);}
@@ -313,7 +313,7 @@
   .session .mtags{color:var(--gold);margin-left:4px;}
   .crit.jump{cursor:pointer;}
   .crit.jump:hover{color:var(--gold);}
-  .qtile{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:14px 16px;}
+  .qtile{background:var(--panel);border:1px solid var(--border);border-radius:2px;padding:14px 16px;}
   .qtile-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
   .wtitle{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-mute);}
   .qtile-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold);line-height:1;white-space:nowrap;}
@@ -369,9 +369,9 @@
   /* ---- Undo toast ---- */
   .undo-toast{
     display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-    background:var(--panel-2);border:1px solid var(--gold-dim);border-radius:3px;
+    background:var(--panel-2);border:1px solid var(--gold-dim);border-radius:2px;
     padding:10px 14px;align-items:center;gap:14px;font-family:'Outfit',sans-serif;font-size:13px;
-    box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:2000;max-width:calc(100vw - 32px);
+    box-shadow:0 4px 12px rgba(0,0,0,0.35);z-index:2000;max-width:calc(100vw - 32px);
   }
   .undo-toast button{border-color:var(--gold-dim);color:var(--gold);padding:6px 12px;}
 
@@ -391,22 +391,36 @@
   .weekrow b{color:var(--gold);font-weight:500;}
   .weekhead{
     display:grid;gap:8px;
-    font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;
+    font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;
     color:var(--text-mute);padding-bottom:6px;border-bottom:1px solid var(--border-strong);
   }
   .weekrow .rarity-icon{display:flex;align-items:center;}
 
   /* ---- Rarity system: a day's "sword" rarity based on goals hit ---- */
+  /* Screen edge in the day's tier color: a hairline, plus a soft glow from
+     the edges that gets stronger with each tier (--glow, 0 at Common, 1 at
+     Legendary). Legendary breathes slowly. Reaching Rare, Epic or Legendary
+     swells the edge once in that tier's color. */
   #rarityFrame{
+    --glow:0; --pulse-color:transparent;
     position:fixed; inset:0; pointer-events:none; z-index:2500;
-    box-shadow: inset 0 0 0 5px var(--pulse-color, transparent), inset 0 0 40px -20px var(--pulse-color, transparent);
-    transition: box-shadow 0.4s ease;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pulse-color) 45%, transparent);
+    transition: box-shadow 0.6s ease;
   }
-  @keyframes legendaryPulse{
-    0%,100%{ box-shadow: inset 0 0 0 5px var(--pulse-color), inset 0 0 40px -20px var(--pulse-color); }
-    50%{ box-shadow: inset 0 0 0 9px var(--pulse-color), inset 0 0 80px -10px var(--pulse-color); }
+  #rarityFrame::before, #rarityFrame::after{content:'';position:absolute;inset:0;pointer-events:none;}
+  #rarityFrame::before{
+    box-shadow: inset 0 0 120px -30px color-mix(in srgb, var(--pulse-color) 40%, transparent);
+    opacity:var(--glow); transition:opacity 0.8s ease;
   }
-  #rarityFrame.legendary-pulse{ animation: legendaryPulse 0.8s ease-in-out 3; }
+  #rarityFrame::after{
+    box-shadow: inset 0 0 0 2px var(--pulse-color), inset 0 0 220px -40px color-mix(in srgb, var(--pulse-color) 55%, transparent);
+    opacity:0;
+  }
+  @keyframes rarityBreathe{ 0%,100%{opacity:var(--glow);} 50%{opacity:calc(var(--glow) * 0.55);} }
+  @keyframes tierSwell{ 0%{opacity:0;} 25%{opacity:1;} 100%{opacity:0;} }
+  #rarityFrame.is-legendary::before{ animation: rarityBreathe 6s ease-in-out infinite; }
+  #rarityFrame.tier-flash::after{ animation: tierSwell 2.4s cubic-bezier(.2,.7,.3,1); }
+  @media (prefers-reduced-motion: reduce){ #rarityFrame::before, #rarityFrame::after{animation:none !important;} }
   .rarity-badge{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;}
   .rarity-streak{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);}
   .rarity-week-avg{display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-mute);margin-bottom:12px;}
@@ -416,10 +430,10 @@
 
   .tier-toast{
     display:none; position:fixed; top:70px; right:20px; z-index:2600;
-    background:var(--panel-2); border:1px solid var(--gold-dim); border-radius:3px;
+    background:var(--panel-2); border:1px solid var(--gold-dim); border-radius:2px;
     padding:12px 16px; font-family:'Outfit',sans-serif; font-size:13px; max-width:220px;
-    box-shadow:0 8px 24px rgba(0,0,0,0.5);
-    animation: toastIn 0.3s ease;
+    box-shadow:0 4px 12px rgba(0,0,0,0.35);
+    animation: toastIn 0.2s cubic-bezier(.2,.7,.3,1);
   }
   @keyframes toastIn{ from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);} }
   .tier-toast .check-item{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-top:6px;}
@@ -465,7 +479,7 @@
   .weekhead{color:var(--gold-dim);}
 
   /* ---- Leftover to-dos (open ones added on an earlier day) ---- */
-  .leftovers{display:none;margin:-4px 0 16px;padding:10px 12px;border:1px solid var(--gold-line);border-radius:3px;}
+  .leftovers{display:none;margin:-4px 0 16px;padding:10px 12px;border:1px solid var(--gold-line);border-radius:2px;}
   .leftovers.show{display:block;}
   .lo-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);margin-bottom:6px;}
   .lo-head b{color:var(--gold);font-weight:500;}
@@ -541,7 +555,7 @@
     <div class="addbar">
       <input type="text" autocomplete="off" id="newTitle" placeholder="Add a quest…" />
       <select id="newProject" title="Category" onchange="onCategoryPicked()"></select>
-      <input type="text" autocomplete="off" spellcheck="false" class="tin" data-next="newEnd" id="newStart" style="width:96px;" placeholder="start" oninput="updateAddButton()" onkeydown="handleTimeBackspace(event)" title="Already did it? When it started — 7, 730, 7:30p, 1930 or now"/>
+      <input type="text" autocomplete="off" spellcheck="false" class="tin" data-next="newEnd" id="newStart" style="width:96px;" placeholder="start" oninput="updateAddButton()" onkeydown="handleTimeBackspace(event)" title="Already did it? When it started: 7, 730, 7:30p, 1930 or now"/>
       <span class="arrow">→</span>
       <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="newStart" id="newEnd" style="width:96px;" placeholder="end" oninput="updateAddButton()" onkeydown="endFieldKeydown(event,'newStart',addQuest)" title="When it ended, or how long (45m, 1h30). Empty = now (today only)"/>
       <label class="checklabel"><input type="checkbox" id="newRecurring"/> daily</label>
@@ -604,9 +618,9 @@
         <div class="meter"><div class="meter-fill" id="sleepMeter"></div></div>
         <div class="meter-label" id="sleepMeterLabel"></div>
         <div class="row">
-          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="bed" data-next="wakeInput" id="bedInput" placeholder="bed" onkeydown="handleTimeBackspace(event)" title="Went to bed — e.g. 11:30, 1a"/>
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="bed" data-next="wakeInput" id="bedInput" placeholder="bed" onkeydown="handleTimeBackspace(event)" title="Went to bed, e.g. 11:30 or 1a"/>
           <span class="arrow">→</span>
-          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="bedInput" id="wakeInput" placeholder="woke" onkeydown="endFieldKeydown(event,'bedInput',logSleep)" title="Woke up — e.g. 7:30. Empty = now (today only)"/>
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="bedInput" id="wakeInput" placeholder="woke" onkeydown="endFieldKeydown(event,'bedInput',logSleep)" title="Woke up, e.g. 7:30. Leave empty for now (today only)"/>
           <button class="primary" id="logSleepBtn" onclick="logSleep()">Log</button>
         </div>
       </div>
@@ -635,7 +649,7 @@
         <div class="muscles" id="muscleChips"></div>
         <div class="row">
           <select id="fitCategory" title="Which fitness category to log under"></select>
-          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-next="fitEnd" id="fitStart" placeholder="start" onkeydown="handleTimeBackspace(event)" title="Started — 7, 730, 7:30p or now"/>
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-next="fitEnd" id="fitStart" placeholder="start" onkeydown="handleTimeBackspace(event)" title="Started: 7, 730, 7:30p or now"/>
           <span class="arrow">→</span>
           <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="fitStart" id="fitEnd" placeholder="end" onkeydown="endFieldKeydown(event,'fitStart',logFitManual)" title="Finished, or how long (45m, 1h). Empty = now (today only)"/>
           <button class="primary" onclick="logFitManual()">Log</button>
@@ -1197,9 +1211,9 @@ document.addEventListener('input', e => { if(e.target.classList) e.target.classL
  *  or runs longer than 12h (16h for sleep) — usually a mistyped time. */
 function rangeProblem(start, end, isSleep){
   const hrs = (end - start) / 3600000, max = isSleep ? 16 : 12, soon = Date.now() + 60000;
-  if(start.getTime() > soon) return `${fmtTime(start)} hasn't happened yet — check the ${isSleep ? 'bed' : 'start'} time`;
-  if(hrs > max) return `That's ${Math.round(hrs)}h (${fmtTime(start)} → ${fmtTime(end)}) — check the times`;
-  if(end.getTime() > soon) return `${fmtTime(end)} hasn't happened yet — check the ${isSleep ? 'wake' : 'end'} time`;
+  if(start.getTime() > soon) return `${fmtTime(start)} hasn't happened yet. Check the ${isSleep ? 'bed' : 'start'} time`;
+  if(hrs > max) return `That's ${Math.round(hrs)}h (${fmtTime(start)} → ${fmtTime(end)}). Check the times`;
+  if(end.getTime() > soon) return `${fmtTime(end)} hasn't happened yet. Check the ${isSleep ? 'wake' : 'end'} time`;
   return '';
 }
 
@@ -1211,7 +1225,7 @@ function readRange(startId, endId){
   const unreadable = [startId, endId].filter((id, i) => [startVal, endVal][i] === null);
   if(unreadable.length){
     flagFields(unreadable);
-    showUndoToast("Couldn't read that time — try 7, 730, 7:30p, 1930, now or 45m");
+    showUndoToast("Couldn't read that time. Try 7, 730, 7:30p, 1930, now or 45m");
     return null;
   }
   if(!endVal && startVal && isViewingToday()) endVal = nowHHMM();
@@ -1220,7 +1234,7 @@ function readRange(startId, endId){
   if(!endVal) missing.push(endId);
   if(missing.length){
     flagFields(missing);
-    if(!endVal && startVal) showUndoToast('Add an end time — "now" only works when logging to today');
+    if(!endVal && startVal) showUndoToast('Add an end time. "now" only works when logging to today');
     return null;
   }
   const isSleep = startId === 'bedInput';
@@ -1316,7 +1330,7 @@ function renderCategoryChips(){
   el.innerHTML = state.projects.map((p, i) => `
     <div class="chip" style="--chip-color:${p.color}" ondblclick="pickCategoryColor(${i}, this, event)" title="Double-click to change the color">
       ${escapeHtml(p.name)}
-      ${p.name==='Sleep' || p.name==='Rotting' ? '' : `<button class="chip-fit ${p.fitness?'on':''}" onclick="toggleFitness(${i})" title="${p.fitness ? 'Counts as fitness — click to stop' : 'Click to count this category as fitness'}">FIT</button>`}
+      ${p.name==='Sleep' || p.name==='Rotting' ? '' : `<button class="chip-fit ${p.fitness?'on':''}" onclick="toggleFitness(${i})" title="${p.fitness ? 'Counts as fitness. Click to stop' : 'Click to count this category as fitness'}">FIT</button>`}
       <button onclick="removeCategory(${i})" aria-label="Remove ${escapeHtml(p.name)}">×</button>
     </div>
   `).join('');
@@ -1868,7 +1882,7 @@ function stopTimer(endOverride){
   if(mins < 1){
     state.timer = null;
     save(); render();
-    showUndoToast('Timer was under a minute — nothing logged');
+    showUndoToast('Timer was under a minute, so nothing was logged');
     return;
   }
   const key = logicalKeyForDate(start);
@@ -2296,7 +2310,7 @@ function cardHTML(q){
   }
 
   const recurTag = q.templateId && state.templates.some(t=>t.id===q.templateId)
-    ? `<span class="recur-tag" title="Repeats daily — click to stop" onclick="stopRecurring('${q.templateId}')">↻ daily</span>` : '';
+    ? `<span class="recur-tag" title="Repeats daily. Click to stop" onclick="stopRecurring('${q.templateId}')">↻ daily</span>` : '';
 
   const icons = `<div class="card-icons">
       <button class="icon-btn" onclick="startEditQuest('${q.id}')" title="Rename or change category" aria-label="Edit">✎</button>
@@ -2311,7 +2325,7 @@ function cardHTML(q){
     // Times sit right on the card: type them and press Enter (or ✓ Done) to log
     // the session and finish the quest in one go; "Log only" keeps it open.
     const timeFields = timing ? '' : `
-        <input type="text" autocomplete="off" spellcheck="false" class="tin qtime" data-next="qend-${q.id}" id="qstart-${q.id}" placeholder="start" onkeydown="handleTimeBackspace(event)" title="Already did it? When it started — 7, 730, 7:30p or now"/>
+        <input type="text" autocomplete="off" spellcheck="false" class="tin qtime" data-next="qend-${q.id}" id="qstart-${q.id}" placeholder="start" onkeydown="handleTimeBackspace(event)" title="Already did it? When it started: 7, 730, 7:30p or now"/>
         <span class="arrow">→</span>
         <input type="text" autocomplete="off" spellcheck="false" class="tin qtime" data-kind="end" data-pair="qstart-${q.id}" id="qend-${q.id}" placeholder="end" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ finishQuest('${q.id}'); })" title="When it ended, or how long (45m, 1h). Empty = now (today only). Enter logs it and marks it done"/>`;
     return `<div class="card ${timing?'timing':''}" style="--tag-color:${color}" draggable="true" ondragstart="onDragStart(event,'${q.id}')">
@@ -2325,7 +2339,7 @@ function cardHTML(q){
       </div>
       <div class="card-actions">
         ${timerBtn}${timeFields}
-        <button class="primary" onclick="finishQuest('${q.id}')" title="Mark it done — logs the times too if you typed them">✓ Done</button>
+        <button class="primary" onclick="finishQuest('${q.id}')" title="Mark it done (logs the times too, if you typed them)">✓ Done</button>
         <button class="log-only" onclick="logQuestTime('${q.id}')" title="Log these times but keep the quest open">Log only</button>
       </div>
     </div>`;
@@ -2580,7 +2594,7 @@ function renderICSDayList(key){
   const el = document.getElementById('icsDayList');
   if(!currentDayICS.length){ el.innerHTML = ''; return; }
   const color = colorFor(state.icsCategory);
-  el.innerHTML = `<div class="sublabel">Classes · click to mark attended — each one missed drops the day a tier</div>
+  el.innerHTML = `<div class="sublabel">Classes · click to mark attended. Each missed class drops the day a tier</div>
     <div class="ics-list">${currentDayICS.map((ev,i)=>{
       const st = classStateFor(key, ev);
       return `<div class="ics-row">
@@ -2591,7 +2605,7 @@ function renderICSDayList(key){
             <span class="ics-state">${CLASS_STATE_LABELS[st]}</span>
           </span>
         </button>
-        <button class="ics-cancel" onclick="toggleICSExcusedAt(${i})" title="${st==='excused' ? 'Class is back on' : 'No class today (cancelled / holiday) — not counted as missed'}">${st==='excused' ? 'Undo cancel' : 'Cancelled'}</button>
+        <button class="ics-cancel" onclick="toggleICSExcusedAt(${i})" title="${st==='excused' ? 'Class is back on' : 'No class today (cancelled or holiday), not counted as missed'}">${st==='excused' ? 'Undo cancel' : 'Cancelled'}</button>
       </div>`;
     }).join('')}</div>`;
 }
@@ -2616,10 +2630,10 @@ function importICS(e){
       normalized.forEach(ev=>{ existingByUid[ev.uid] = ev; });
       state.icsEvents = Object.values(existingByUid);
       save(); render();
-      showUndoToast(`Imported ${normalized.length} event${normalized.length===1?'':'s'} — click a class on the clock to mark it attended`);
+      showUndoToast(`Imported ${normalized.length} event${normalized.length===1?'':'s'}. Click a class on the clock to mark it attended`);
     }catch(err){
       console.error('ICS import failed', err);
-      document.getElementById('icsStatus').textContent = "Couldn't read that file — make sure it's a valid .ics calendar export.";
+      document.getElementById('icsStatus').textContent = "Couldn't read that file. Make sure it's a valid .ics calendar export.";
     }
   };
   reader.readAsText(file);
@@ -2844,7 +2858,7 @@ function renderClocks(log, isToday, icsEvents, dayKey){
         const hit = document.createElementNS(SVG_NS,'path');
         hit.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,112,97,angleStart,angleEnd));
         hit.setAttribute('class','clock-ics-hit');
-        const hint = { attended:'✓ Attended — click to undo', missed:'Missed (−1 tier) — click if you went', excused:'Cancelled — click if it happened and you went' }[st] || 'Click to mark attended';
+        const hint = { attended:'✓ Attended. Click to undo', missed:'Missed, −1 tier. Click if you went', excused:'Cancelled. Click if it happened and you went' }[st] || 'Click to mark attended';
         hit.addEventListener('mousemove', e=>showTooltip(e, p.entry, hint));
         hit.addEventListener('mouseenter', e=>{ path.classList.add('hover'); showTooltip(e, p.entry, hint); });
         hit.addEventListener('mouseleave', ()=>{ path.classList.remove('hover'); hideTooltip(); });
@@ -3190,7 +3204,7 @@ function renderRarityStrip(key){
     else items.push(crit('met', '✓', c.excused === c.total ? 'Classes cancelled' : `Classes ${c.attended}/${c.total - c.excused}`));
   }
   const next = nextTierHint(key, r);
-  if(next && next.none) items.push(`<span class="rs-next" style="color:var(--text-mute)">Nothing left can raise this day${c.missed ? ' — a missed class can still be marked cancelled' : ''}</span>`);
+  if(next && next.none) items.push(`<span class="rs-next" style="color:var(--text-mute)">Nothing left can raise this day${c.missed ? ' (a missed class can still be marked cancelled)' : ''}</span>`);
   else if(next) items.push(`<span class="rs-next">→ <b style="color:${next.rarity.color}">${next.rarity.name}</b>: ${escapeHtml(next.text)}</span>`);
   const strip = document.getElementById('rarityStrip');
   strip.style.setProperty('--tier', r.rarity.color);
@@ -3217,6 +3231,7 @@ function swordSVG(color, w, h){
 // so we only celebrate genuine transitions, not every re-render.
 let lastRarityTierIndex = null;
 let wasLegendary = false;
+let tierFlashTimer = null;
 
 /** Consecutive days (today backward) rated Rare or better. */
 function computeRarityStreak(){
@@ -3263,11 +3278,18 @@ function renderRarityBadge(){
 
   const frame = document.getElementById('rarityFrame');
   frame.style.setProperty('--pulse-color', rarity.color);
+  frame.style.setProperty('--glow', (tierIndex / (RARITY_TIERS.length - 1)).toFixed(2));
 
   const isLegendary = rarity.name === 'Legendary';
-  if(isLegendary && !wasLegendary){
-    frame.classList.add('legendary-pulse');
-    setTimeout(()=>frame.classList.remove('legendary-pulse'), 2500);
+  frame.classList.toggle('is-legendary', isLegendary);
+  // Flash once on moving up into Rare, Epic or Legendary (Legendary also on load).
+  const tierUp = lastRarityTierIndex === null ? isLegendary : tierIndex > lastRarityTierIndex;
+  if(tierIndex >= 2 && tierUp){
+    clearTimeout(tierFlashTimer);
+    frame.classList.remove('tier-flash');
+    void frame.offsetWidth; // restart the animation if one is still running
+    frame.classList.add('tier-flash');
+    tierFlashTimer = setTimeout(()=>frame.classList.remove('tier-flash'), 2500);
   }
   wasLegendary = isLegendary;
 
@@ -3291,7 +3313,7 @@ function renderMonthGrid(){
   el.innerHTML = days.map(({key,date})=>{
     const r = dayRarity(key);
     const label = date.toLocaleDateString([], {month:'short', day:'numeric'});
-    return `<div class="month-cell" style="background:${r.rarity.color}" title="${label}: ${r.rarity.name} — ${escapeHtml(rarityExplain(r))}"></div>`;
+    return `<div class="month-cell" style="background:${r.rarity.color}" title="${label}: ${r.rarity.name}. ${escapeHtml(rarityExplain(r))}"></div>`;
   }).join('');
 }
 
@@ -3676,7 +3698,7 @@ function importJSON(e){
       showUndoToast('Backup restored', () => { state = JSON.parse(snapshot); normalizeState(); save(); render(); });
     }catch(err){
       console.error('import failed', err);
-      alert("Couldn't read that file — make sure it's a trackR backup .json file.");
+      alert("Couldn't read that file. Make sure it's a trackR backup .json file.");
     }
   };
   reader.readAsText(file);
@@ -3688,7 +3710,7 @@ function importJSON(e){
  *  though "This week" stops showing it. */
 function exportSingleDay(key){
   const date = dayDate(key);
-  let out = "RBUILDS TRACKR — DAY ARCHIVE\n";
+  let out = "TRACKR · DAY ARCHIVE\n";
   out += "Auto-saved on rollover (day fell outside the 7-day window)\n";
   out += "=".repeat(50) + "\n\n";
   out += dayReportText(key, date);
@@ -3699,7 +3721,7 @@ function exportSingleDay(key){
  *  (the "Export log (.txt)" button). */
 function exportLog(){
   const days = lastNDays(7);
-  let out = "RBUILDS TRACKR — WEEKLY LOG\n";
+  let out = "TRACKR · WEEKLY LOG\n";
   out += "Generated " + new Date().toLocaleString() + "\n";
   out += "=".repeat(50) + "\n\n";
   days.forEach(({key,date}) => { out += dayReportText(key, date); });
@@ -3838,4 +3860,3 @@ try{
 </script>
 </body>
 </html>
-
