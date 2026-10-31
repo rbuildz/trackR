@@ -302,8 +302,11 @@
   .spark .spark-dot{fill:var(--gold);}
   .spark .spark-sel{fill:var(--text);}
   .muscles{display:flex;flex-wrap:wrap;gap:6px;}
+  .session-muscles{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+  .session-muscles .mchip{padding:2px 7px;font-size:10px;}
   .mchip{
     display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font-size:11px;letter-spacing:0.5px;
+    border:1px solid var(--border-strong);border-radius:2px;
     text-transform:none;font-family:'Outfit',sans-serif;color:var(--text-mute);
   }
   .mchip .mcount{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);}
@@ -354,6 +357,7 @@
   .meter-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-mute);margin-top:5px;}
   .session-list{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
   .session{
+    flex-wrap:wrap;
     display:flex;justify-content:space-between;align-items:center;font-family:'DM Mono',monospace;font-size:11px;
     color:var(--text-mute);padding:4px 4px 4px 8px;background:var(--panel-2);border:1px solid var(--border);border-radius:2px;
   }
@@ -645,7 +649,7 @@
         </div>
         <div class="meter"><div class="meter-fill" id="fitMeter"></div></div>
         <div class="meter-label" id="fitMeterLabel"></div>
-        <div class="sublabel" style="margin-top:14px;">What you trained <span class="sublabel-hint">· number = times this week</span></div>
+        <div class="sublabel" style="margin-top:14px;">Trained this week <span class="sublabel-hint">· tag muscles on a session below</span></div>
         <div class="muscles" id="muscleChips"></div>
         <div class="row">
           <select id="fitCategory" title="Which fitness category to log under"></select>
@@ -2113,22 +2117,27 @@ function setFitGoal(val){
 function addFitSession(key, startDate, endDate){
   const project = document.getElementById('fitCategory').value;
   const mins = Math.round((endDate-startDate)/60000);
-  const muscles = MUSCLE_GROUPS.filter(m => pickedMuscles.has(m));
-  const title = muscles.length ? muscles.join(' + ') : project;
-  addLog(key, { title, project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString(), muscles });
-  pickedMuscles.clear();
+  addLog(key, { title:project, project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString() });
   return mins;
 }
 
-// Muscle groups: tap chips to tag the next workout. Each chip also shows how
-// many times that group was trained in the 7 days up to the viewed day, so a
-// zero is an obvious "haven't hit this lately".
+// Muscle groups: tag any logged fitness session from its row in the Fitness
+// tile. The overview chips show how many times each group was trained in the
+// 7 days up to the viewed day, so a zero is an obvious "haven't hit this lately".
 const MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Core', 'Legs', 'Cardio'];
-const pickedMuscles = new Set();
 
-function toggleMuscle(m){
-  if(pickedMuscles.has(m)) pickedMuscles.delete(m); else pickedMuscles.add(m);
-  renderMuscleChips(selectedDayKey);
+/** Tags or untags a muscle group on a logged session. Redraws only this tile
+ *  so anything typed elsewhere stays put. */
+function toggleSessionMuscle(key, id, m){
+  const l = (state.logs[key]||[]).find(l => l.id === id);
+  if(!l) return;
+  const had = l.muscles || [];
+  const next = MUSCLE_GROUPS.filter(g => g === m ? !had.includes(g) : had.includes(g));
+  // Sessions logged before tagging moved here were titled after their muscles.
+  if(had.length && l.title === had.join(' + ')) l.title = next.length ? next.join(' + ') : l.project;
+  l.muscles = next;
+  save();
+  renderFitWidget(key);
 }
 
 /** How many sessions tagged each muscle group in the 7 days ending on `key`. */
@@ -2143,9 +2152,9 @@ function muscleCountsFor(key){
 function renderMuscleChips(key){
   const counts = muscleCountsFor(key);
   document.getElementById('muscleChips').innerHTML = MUSCLE_GROUPS.map(m => `
-    <button class="mchip ${counts[m]?'hit':''} ${pickedMuscles.has(m)?'on':''}" onclick="toggleMuscle('${m}')" aria-pressed="${pickedMuscles.has(m)}" title="${counts[m] ? `Trained ${counts[m]}× in the last 7 days` : 'Not trained in the last 7 days'}">
+    <span class="mchip ${counts[m]?'hit':''}" title="${counts[m] ? `Trained ${counts[m]}× in the last 7 days` : 'Not trained in the last 7 days'}">
       ${m}<span class="mcount">${counts[m]}</span>
-    </button>`).join('');
+    </span>`).join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -2286,7 +2295,11 @@ function renderFitWidget(key){
     <div class="session">
       <span>${escapeHtml(l.title)} · ${l.start ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)} · <b>${l.actualMins}m</b></span>
       <button class="xbtn" onclick="removeLogEntry('${key}','${l.id}')" title="Remove this session" aria-label="Remove this session">×</button>
-    </div>`).join('');
+      <div class="session-muscles">${MUSCLE_GROUPS.map(m => {
+        const on = (l.muscles||[]).includes(m);
+        return `<button class="mchip ${on?'on':''}" onclick="toggleSessionMuscle('${key}','${l.id}','${m}')" aria-pressed="${on}" title="${on ? 'Remove' : 'Add'} ${m}">${m}</button>`;
+      }).join('')}</div>
+    </div>`).join('') || (fitProjects.length ? '<div class="meter-label">Log a quest under a FIT category and tag its muscles here.</div>' : '');
   renderMuscleChips(key);
 }
 
