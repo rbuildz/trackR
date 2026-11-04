@@ -221,6 +221,7 @@
   }
   .chip .chip-fit.on{border-color:var(--green);color:var(--green);}
   .chip .chip-fit:hover{color:var(--green);border-color:var(--green);}
+  .chip .chip-focus.on, .chip .chip-focus:hover{color:var(--gold);border-color:var(--gold);}
   .chip{cursor:pointer;user-select:none;}
   .catform{display:flex;gap:8px;flex-wrap:wrap;}
 
@@ -703,9 +704,14 @@
         <span>hrs · +2 toward rarity</span>
       </div>
       <div class="goalrow">
-        <label for="fitGoalInput">Fitness for Epic</label>
+        <label for="fitGoalInput">Fitness goal</label>
         <input type="number" autocomplete="off" id="fitGoalInput" min="0" style="width:60px;" onchange="setFitGoal(this.value)"/>
-        <span>min in a FIT category, needed for Epic &amp; Legendary</span>
+        <span>min in a FIT category</span>
+      </div>
+      <div class="goalrow">
+        <label for="focusGoalInput">Focus goal</label>
+        <input type="number" autocomplete="off" id="focusGoalInput" min="0" style="width:60px;" onchange="setFocusGoal(this.value)"/>
+        <span>min in a FOCUS category · Epic needs fitness or focus, Legendary needs both</span>
       </div>
       <div class="goalrow">
         <label for="weightUnitSelect">Weight unit</label>
@@ -726,7 +732,7 @@
     </div>
 
     <div class="setgroup">
-      <div class="sublabel">Categories <span class="sublabel-hint">· FIT = counts as fitness · double-click to recolor</span></div>
+      <div class="sublabel">Categories <span class="sublabel-hint">· FIT = fitness · FOCUS = deep work · double-click to recolor</span></div>
       <div class="categories" id="categoryChips"></div>
       <div class="catform">
         <input type="text" autocomplete="off" id="newCatName" placeholder="New category" style="width:180px;" onkeydown="if(event.key==='Enter') addCategory()"/>
@@ -792,7 +798,8 @@
  *   icsCategory – category used when an imported calendar event is marked attended
  *   icsExcused – {icsKey: true} for class occurrences marked cancelled
  *   icsSince   – first day missed classes count against rarity
- *   projects[].fitness – category counts toward goals.fitnessMins (the Epic gate)
+ *   projects[].fitness – category counts toward goals.fitnessMins (one of the two gates above Rare)
+ *   projects[].focus – category counts toward goals.focusMins (the other gate); never both flags
  *   logs[day][].muscles – muscle groups a fitness session trained, e.g. ['Legs','Core']
  *   weight[day] – body weight logged that day, in goals.weightUnit ('lb'|'kg')
  *
@@ -930,6 +937,7 @@ function normalizeState(){
   if(typeof state.goals.sleepHours !== 'number') state.goals.sleepHours = 8;
   if(typeof state.goals.rotMins !== 'number') state.goals.rotMins = 60;
   if(typeof state.goals.fitnessMins !== 'number') state.goals.fitnessMins = 30;
+  if(typeof state.goals.focusMins !== 'number') state.goals.focusMins = 60;
   if(typeof state.icsExcused !== 'object' || state.icsExcused === null) state.icsExcused = {};
   if(typeof state.weight !== 'object' || state.weight === null) state.weight = {};
   if(state.goals.weightUnit !== 'kg') state.goals.weightUnit = 'lb';
@@ -1334,7 +1342,7 @@ function renderCategoryChips(){
   el.innerHTML = state.projects.map((p, i) => `
     <div class="chip" style="--chip-color:${p.color}" ondblclick="pickCategoryColor(${i}, this, event)" title="Double-click to change the color">
       ${escapeHtml(p.name)}
-      ${p.name==='Sleep' || p.name==='Rotting' ? '' : `<button class="chip-fit ${p.fitness?'on':''}" onclick="toggleFitness(${i})" title="${p.fitness ? 'Counts as fitness. Click to stop' : 'Click to count this category as fitness'}">FIT</button>`}
+      ${p.name==='Sleep' || p.name==='Rotting' ? '' : `<button class="chip-fit ${p.fitness?'on':''}" onclick="toggleFitness(${i})" title="${p.fitness ? 'Counts as fitness. Click to stop' : 'Click to count this category as fitness'}">FIT</button><button class="chip-fit chip-focus ${p.focus?'on':''}" onclick="toggleFocus(${i})" title="${p.focus ? 'Counts as focus. Click to stop' : 'Click to count this category as focus'}">FOCUS</button>`}
       <button onclick="removeCategory(${i})" aria-label="Remove ${escapeHtml(p.name)}">×</button>
     </div>
   `).join('');
@@ -1369,8 +1377,20 @@ function toggleFitness(idx){
   const p = state.projects[idx];
   if(!p) return;
   p.fitness = !p.fitness;
+  if(p.fitness) p.focus = false; // one hour can't open both gates
   save(); render();
   showUndoToast(p.fitness ? `"${p.name}" now counts as fitness` : `"${p.name}" no longer counts as fitness`);
+}
+
+/** Flags/unflags a category as focus (its time counts toward the focus gate).
+ *  Turning it on turns FIT off for that category, and vice versa. */
+function toggleFocus(idx){
+  const p = state.projects[idx];
+  if(!p) return;
+  p.focus = !p.focus;
+  if(p.focus) p.fitness = false;
+  save(); render();
+  showUndoToast(p.focus ? `"${p.name}" now counts as focus` : `"${p.name}" no longer counts as focus`);
 }
 
 /** Adds a new category chip (project) with a name + color, ignoring duplicates. */
@@ -2094,8 +2114,8 @@ function addRotSession(key, startDate, endDate){
 }
 
 // ---------------------------------------------------------------------------
-// 4c. FITNESS — any category flagged "fitness" counts. Epic or better needs
-// at least goals.fitnessMins of it that day (see dayRarity).
+// 4c. FITNESS and FOCUS — any category flagged "fitness" / "focus" counts.
+// Each goal met that day opens one tier above Rare (see tierFor).
 // ---------------------------------------------------------------------------
 
 function isFitnessProject(name){
@@ -2105,6 +2125,20 @@ function isFitnessProject(name){
 
 function fitnessMinsFor(key){
   return (state.logs[key]||[]).filter(l=>isFitnessProject(l.project)).reduce((s,l)=>s+(l.actualMins||0), 0);
+}
+
+function isFocusProject(name){
+  const p = state.projects.find(p=>p.name===name);
+  return !!(p && p.focus);
+}
+
+function focusMinsFor(key){
+  return (state.logs[key]||[]).filter(l=>isFocusProject(l.project)).reduce((s,l)=>s+(l.actualMins||0), 0);
+}
+
+function setFocusGoal(val){
+  state.goals.focusMins = parseInt(val) || 0;
+  save(); render();
 }
 
 function setFitGoal(val){
@@ -2287,8 +2321,9 @@ function renderFitWidget(key){
   meter.classList.toggle('met', mins >= goal);
   document.getElementById('fitMeterLabel').textContent = !fitProjects.length
     ? 'Mark a category FIT in Settings to start'
-    : mins >= goal ? 'Epic + Legendary unlocked' : `${goal-mins} min more unlocks Epic`;
+    : mins >= goal ? 'Goal met · counts toward Epic and Legendary' : `${goal-mins} min to the goal`;
   document.getElementById('fitGoalInput').value = goal;
+  document.getElementById('focusGoalInput').value = state.goals.focusMins;
 
   const sessions = (state.logs[key]||[]).filter(l=>isFitnessProject(l.project)).sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts));
   document.getElementById('fitSessions').innerHTML = sessions.map(l => `
@@ -3123,8 +3158,8 @@ function rarityForScore(score){
  * Rates a day. Score 0–6: +2 for hitting the sleep goal, +1 per quest
  * *completed* that day (capped at 4, via completedCounts — see
  * completeQuest; attended classes don't count). Then:
- *   - Epic or above needs goals.fitnessMins of fitness-category time, else
- *     the day is capped at Rare.
+ *   - Above Rare is gated: the fitness goal and the focus goal each open
+ *     one tier. Neither → capped at Rare; one → up to Epic; both → Legendary.
  *   - Each missed class drops it one tier (never below Common).
  * Returns the final tier plus every input, for the breakdown strip/tooltips.
  */
@@ -3134,25 +3169,28 @@ function dayRarity(key){
   const questPoints = Math.min(questCount, 4);
   const fitnessMins = fitnessMinsFor(key);
   const fitnessMet = fitnessMins >= state.goals.fitnessMins;
+  const focusMins = focusMinsFor(key);
+  const focusMet = focusMins >= state.goals.focusMins;
   const classes = classStatusFor(key);
 
-  const t = tierFor({ sleepMet, questCount, fitnessMet, missed: classes.missed });
-  return { rarity: RARITY_TIERS[t.tier], tier: t.tier, baseTier: t.baseTier, score: t.score, sleepMet, questCount, questPoints, fitnessMins, fitnessMet, fitnessCapped: t.fitnessCapped, classes };
+  const t = tierFor({ sleepMet, questCount, fitnessMet, focusMet, missed: classes.missed });
+  return { rarity: RARITY_TIERS[t.tier], tier: t.tier, baseTier: t.baseTier, score: t.score, sleepMet, questCount, questPoints, fitnessMins, fitnessMet, focusMins, focusMet, capped: t.capped, classes };
 }
 
 /** The tier rules on their own, so the next-tier hint can try "what ifs". */
-function tierFor({ sleepMet, questCount, fitnessMet, missed }){
+function tierFor({ sleepMet, questCount, fitnessMet, focusMet, missed }){
   const score = (sleepMet?2:0) + Math.min(questCount, 4);
   const baseTier = RARITY_TIERS.indexOf(rarityForScore(score));
-  const fitnessCapped = !fitnessMet && baseTier >= EPIC_TIER;
-  const tier = Math.max(0, (fitnessCapped ? EPIC_TIER-1 : baseTier) - missed);
-  return { score, baseTier, fitnessCapped, tier };
+  const maxTier = EPIC_TIER - 1 + (fitnessMet?1:0) + (focusMet?1:0);
+  const capped = baseTier > maxTier;
+  const tier = Math.max(0, Math.min(baseTier, maxTier) - missed);
+  return { score, baseTier, capped, tier };
 }
 
 /**
  * The cheapest set of things still doable on this day that lifts it at
  * least one tier (and the tier it lands on), e.g. "+1 quest" or "sleep goal
- * + 15 fitness min". Tries every mix of sleep / fitness / extra quests (a
+ * + 15 fitness min". Tries every mix of sleep / fitness / focus / quests (a
  * missed class is fixed only by marking it cancelled, so it's not an
  * option). Returns null at Legendary, or {none:true} when nothing left can
  * raise it.
@@ -3162,19 +3200,25 @@ function nextTierHint(key, r){
   const target = r.tier + 1;
   const sleepNeed = Math.max(0, state.goals.sleepHours - sleepHoursFor(key));
   const fitNeed = Math.max(0, state.goals.fitnessMins - r.fitnessMins);
+  const focusNeed = Math.max(0, state.goals.focusMins - r.focusMins);
+  // A goal with no category flagged for it can't be met, so don't suggest it.
+  const canFit = state.projects.some(p=>p.fitness), canFocus = state.projects.some(p=>p.focus);
   let best = null;
   for(const s of r.sleepMet || !state.goals.sleepHours ? [0] : [0,1]){
-    for(const f of r.fitnessMet ? [0] : [0,1]){
-      for(let q = 0; q <= 4 - r.questPoints; q++){
-        const cost = s + f + q;
-        if(!cost) continue;
-        const t = tierFor({
-          sleepMet: r.sleepMet || !!s,
-          questCount: r.questCount + q,
-          fitnessMet: r.fitnessMet || !!f,
-          missed: r.classes.missed
-        }).tier;
-        if(t >= target && (!best || cost < best.cost || (cost === best.cost && t > best.t))) best = { cost, s, f, q, t };
+    for(const f of r.fitnessMet || !canFit ? [0] : [0,1]){
+      for(const c of r.focusMet || !canFocus ? [0] : [0,1]){
+        for(let q = 0; q <= 4 - r.questPoints; q++){
+          const cost = s + f + c + q;
+          if(!cost) continue;
+          const t = tierFor({
+            sleepMet: r.sleepMet || !!s,
+            questCount: r.questCount + q,
+            fitnessMet: r.fitnessMet || !!f,
+            focusMet: r.focusMet || !!c,
+            missed: r.classes.missed
+          }).tier;
+          if(t >= target && (!best || cost < best.cost || (cost === best.cost && t > best.t))) best = { cost, s, f, c, q, t };
+        }
       }
     }
   }
@@ -3182,6 +3226,7 @@ function nextTierHint(key, r){
   const parts = [];
   if(best.s) parts.push(`sleep goal (+${Math.round(sleepNeed*10)/10}h)`);
   if(best.f) parts.push(`${fitNeed} more fitness min`);
+  if(best.c) parts.push(`${focusNeed} more focus min`);
   if(best.q) parts.push(`${best.q} more quest${best.q===1?'':'s'}`);
   return { text: parts.join(' + '), rarity: RARITY_TIERS[best.t] };
 }
@@ -3192,8 +3237,10 @@ function rarityExplain(r){
     `score ${r.score}/6`,
     `sleep goal ${r.sleepMet?'met':'not met'}`,
     `${r.questCount} quest${r.questCount===1?'':'s'} completed`,
-    `${r.fitnessMins}/${state.goals.fitnessMins} min fitness${r.fitnessCapped?' (capped at Rare)':''}`
+    `${r.fitnessMins}/${state.goals.fitnessMins} min fitness`,
+    `${r.focusMins}/${state.goals.focusMins} min focus`
   ];
+  if(r.capped) parts.push(`held at ${r.rarity.name} until ${r.fitnessMet || r.focusMet ? 'both goals are' : 'a fitness or focus goal is'} met`);
   if(r.classes.missed) parts.push(`${r.classes.missed} class${r.classes.missed===1?'':'es'} missed (−${r.classes.missed} tier)`);
   return parts.join(' · ');
 }
@@ -3208,7 +3255,9 @@ function renderRarityStrip(key){
     `<span class="rs-tier" style="color:${r.rarity.color}" title="${escapeHtml(rarityExplain(r))}">${swordSVG(r.rarity.color, 12, 18)} ${r.rarity.name}</span>`,
     crit((r.sleepMet?'met':'')+' jump', r.sleepMet?'✓':'○', `Sleep ${sleepHoursFor(key)}/${state.goals.sleepHours}h`, '+2 when you hit your sleep goal · click to log sleep'),
     crit(r.questPoints>=4?'met':'', r.questPoints>=4?'✓':'○', `Quests ${Math.min(r.questCount,4)}/4`, '+1 per completed quest, up to 4'),
-    crit((r.fitnessMet?'met':(r.fitnessCapped?'locked':''))+' jump', r.fitnessMet?'✓':'○', `Fitness ${r.fitnessMins}/${goal}m${r.fitnessCapped?' · Epic locked':''}`, `Epic and Legendary need ${goal} min in a FIT category · click to log a workout`)
+    crit((r.fitnessMet?'met':(r.capped?'locked':''))+' jump', r.fitnessMet?'✓':'○', `Fitness ${r.fitnessMins}/${goal}m`, `${goal} min in a FIT category · Epic needs fitness or focus, Legendary needs both · click to log a workout`),
+    crit(r.focusMet?'met':(r.capped?'locked':''), r.focusMet?'✓':'○', `Focus ${r.focusMins}/${state.goals.focusMins}m`,
+      state.projects.some(p=>p.focus) ? `${state.goals.focusMins} min in a FOCUS category · Epic needs fitness or focus, Legendary needs both` : 'Mark a category FOCUS in Settings → Categories')
   ];
   const c = r.classes;
   if(c.total){
@@ -3269,6 +3318,7 @@ function showTierUpgradeToast(r){
     ${item(r.sleepMet, 'Sleep goal')}
     ${item(r.questCount>0, `Quests completed (${r.questCount})`)}
     ${item(r.fitnessMet, `Fitness ${r.fitnessMins}/${state.goals.fitnessMins}m`)}
+    ${item(r.focusMet, `Focus ${r.focusMins}/${state.goals.focusMins}m`)}
     ${r.classes.total ? item(!r.classes.missed, r.classes.missed ? `${r.classes.missed} class missed` : 'No classes missed') : ''}
   `;
   el.style.display = 'block';
