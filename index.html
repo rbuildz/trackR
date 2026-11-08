@@ -90,6 +90,9 @@
   .crit.met .ck{color:var(--green);}
   .crit.locked{color:var(--gold);}
   .crit.penalty{color:var(--red);}
+  .crit .focus-pick{padding:1px 4px;font-family:inherit;font-size:inherit;color:inherit;background:transparent;border:none;border-bottom:1px dashed var(--border-strong);border-radius:0;cursor:pointer;}
+  .crit .focus-pick:hover, .crit .focus-pick:focus{border-bottom-color:var(--gold);color:var(--gold);outline:none;}
+  .crit .focus-pick option{background:var(--panel);color:var(--text);}
   .rs-next{flex-basis:100%;color:var(--gold);}
   .rs-next b{font-weight:500;}
 
@@ -221,7 +224,6 @@
   }
   .chip .chip-fit.on{border-color:var(--green);color:var(--green);}
   .chip .chip-fit:hover{color:var(--green);border-color:var(--green);}
-  .chip .chip-focus.on, .chip .chip-focus:hover{color:var(--gold);border-color:var(--gold);}
   .chip{cursor:pointer;user-select:none;}
   .catform{display:flex;gap:8px;flex-wrap:wrap;}
 
@@ -711,7 +713,7 @@
       <div class="goalrow">
         <label for="focusGoalInput">Focus goal</label>
         <input type="number" autocomplete="off" id="focusGoalInput" min="0" style="width:60px;" onchange="setFocusGoal(this.value)"/>
-        <span>min in a FOCUS category · Epic needs fitness or focus, Legendary needs both</span>
+        <span>min in the day's focus category · Epic needs fitness or focus, Legendary needs both</span>
       </div>
       <div class="goalrow">
         <label for="weightUnitSelect">Weight unit</label>
@@ -732,7 +734,7 @@
     </div>
 
     <div class="setgroup">
-      <div class="sublabel">Categories <span class="sublabel-hint">· FIT = fitness · FOCUS = deep work · double-click to recolor</span></div>
+      <div class="sublabel">Categories <span class="sublabel-hint">· FIT = counts as fitness · double-click to recolor</span></div>
       <div class="categories" id="categoryChips"></div>
       <div class="catform">
         <input type="text" autocomplete="off" id="newCatName" placeholder="New category" style="width:180px;" onkeydown="if(event.key==='Enter') addCategory()"/>
@@ -799,7 +801,7 @@
  *   icsExcused – {icsKey: true} for class occurrences marked cancelled
  *   icsSince   – first day missed classes count against rarity
  *   projects[].fitness – category counts toward goals.fitnessMins (one of the two gates above Rare)
- *   projects[].focus – category counts toward goals.focusMins (the other gate); never both flags
+ *   focus[day] – that day's focus category; its time counts toward goals.focusMins (the other gate)
  *   logs[day][].muscles – muscle groups a fitness session trained, e.g. ['Legs','Core']
  *   weight[day] – body weight logged that day, in goals.weightUnit ('lb'|'kg')
  *
@@ -940,6 +942,8 @@ function normalizeState(){
   if(typeof state.goals.focusMins !== 'number') state.goals.focusMins = 60;
   if(typeof state.icsExcused !== 'object' || state.icsExcused === null) state.icsExcused = {};
   if(typeof state.weight !== 'object' || state.weight === null) state.weight = {};
+  if(typeof state.focus !== 'object' || state.focus === null) state.focus = {};
+  state.projects.forEach(p => delete p.focus); // focus used to be a category flag
   if(state.goals.weightUnit !== 'kg') state.goals.weightUnit = 'lb';
   if(!Array.isArray(state.templates)) state.templates = [];
   if(typeof state.bestStreak !== 'number') state.bestStreak = 0;
@@ -1342,7 +1346,7 @@ function renderCategoryChips(){
   el.innerHTML = state.projects.map((p, i) => `
     <div class="chip" style="--chip-color:${p.color}" ondblclick="pickCategoryColor(${i}, this, event)" title="Double-click to change the color">
       ${escapeHtml(p.name)}
-      ${p.name==='Sleep' || p.name==='Rotting' ? '' : `<button class="chip-fit ${p.fitness?'on':''}" onclick="toggleFitness(${i})" title="${p.fitness ? 'Counts as fitness. Click to stop' : 'Click to count this category as fitness'}">FIT</button><button class="chip-fit chip-focus ${p.focus?'on':''}" onclick="toggleFocus(${i})" title="${p.focus ? 'Counts as focus. Click to stop' : 'Click to count this category as focus'}">FOCUS</button>`}
+      ${p.name==='Sleep' || p.name==='Rotting' ? '' : `<button class="chip-fit ${p.fitness?'on':''}" onclick="toggleFitness(${i})" title="${p.fitness ? 'Counts as fitness. Click to stop' : 'Click to count this category as fitness'}">FIT</button>`}
       <button onclick="removeCategory(${i})" aria-label="Remove ${escapeHtml(p.name)}">×</button>
     </div>
   `).join('');
@@ -1377,20 +1381,8 @@ function toggleFitness(idx){
   const p = state.projects[idx];
   if(!p) return;
   p.fitness = !p.fitness;
-  if(p.fitness) p.focus = false; // one hour can't open both gates
   save(); render();
   showUndoToast(p.fitness ? `"${p.name}" now counts as fitness` : `"${p.name}" no longer counts as fitness`);
-}
-
-/** Flags/unflags a category as focus (its time counts toward the focus gate).
- *  Turning it on turns FIT off for that category, and vice versa. */
-function toggleFocus(idx){
-  const p = state.projects[idx];
-  if(!p) return;
-  p.focus = !p.focus;
-  if(p.focus) p.fitness = false;
-  save(); render();
-  showUndoToast(p.focus ? `"${p.name}" now counts as focus` : `"${p.name}" no longer counts as focus`);
 }
 
 /** Adds a new category chip (project) with a name + color, ignoring duplicates. */
@@ -2114,8 +2106,9 @@ function addRotSession(key, startDate, endDate){
 }
 
 // ---------------------------------------------------------------------------
-// 4c. FITNESS and FOCUS — any category flagged "fitness" / "focus" counts.
-// Each goal met that day opens one tier above Rare (see tierFor).
+// 4c. FITNESS and FOCUS — fitness is any category flagged "fitness"; focus is
+// the one category picked for that day (state.focus). Each goal met that day
+// opens one tier above Rare (see tierFor).
 // ---------------------------------------------------------------------------
 
 function isFitnessProject(name){
@@ -2127,13 +2120,27 @@ function fitnessMinsFor(key){
   return (state.logs[key]||[]).filter(l=>isFitnessProject(l.project)).reduce((s,l)=>s+(l.actualMins||0), 0);
 }
 
-function isFocusProject(name){
-  const p = state.projects.find(p=>p.name===name);
-  return !!(p && p.focus);
+/** Categories a day's focus can be: anything but fitness, sleep and rotting,
+ *  so one session can't count toward both gates. */
+function focusOptions(){
+  return state.projects.filter(p => !p.fitness && p.name!=='Sleep' && p.name!=='Rotting');
+}
+
+function focusFor(key){
+  const name = state.focus[key];
+  return focusOptions().some(p=>p.name===name) ? name : '';
 }
 
 function focusMinsFor(key){
-  return (state.logs[key]||[]).filter(l=>isFocusProject(l.project)).reduce((s,l)=>s+(l.actualMins||0), 0);
+  const name = focusFor(key);
+  if(!name) return 0;
+  return (state.logs[key]||[]).filter(l=>l.project===name).reduce((s,l)=>s+(l.actualMins||0), 0);
+}
+
+function setDayFocus(key, name){
+  withUndo(name ? `Focus on ${dayLabel(key)}: ${name}` : `Cleared focus for ${dayLabel(key)}`, () => {
+    if(name) state.focus[key] = name; else delete state.focus[key];
+  });
 }
 
 function setFocusGoal(val){
@@ -3174,7 +3181,7 @@ function dayRarity(key){
   const classes = classStatusFor(key);
 
   const t = tierFor({ sleepMet, questCount, fitnessMet, focusMet, missed: classes.missed });
-  return { rarity: RARITY_TIERS[t.tier], tier: t.tier, baseTier: t.baseTier, score: t.score, sleepMet, questCount, questPoints, fitnessMins, fitnessMet, focusMins, focusMet, capped: t.capped, classes };
+  return { key, rarity: RARITY_TIERS[t.tier], tier: t.tier, baseTier: t.baseTier, score: t.score, sleepMet, questCount, questPoints, fitnessMins, fitnessMet, focusMins, focusMet, capped: t.capped, classes };
 }
 
 /** The tier rules on their own, so the next-tier hint can try "what ifs". */
@@ -3202,7 +3209,7 @@ function nextTierHint(key, r){
   const fitNeed = Math.max(0, state.goals.fitnessMins - r.fitnessMins);
   const focusNeed = Math.max(0, state.goals.focusMins - r.focusMins);
   // A goal with no category flagged for it can't be met, so don't suggest it.
-  const canFit = state.projects.some(p=>p.fitness), canFocus = state.projects.some(p=>p.focus);
+  const canFit = state.projects.some(p=>p.fitness), canFocus = focusOptions().length > 0;
   let best = null;
   for(const s of r.sleepMet || !state.goals.sleepHours ? [0] : [0,1]){
     for(const f of r.fitnessMet || !canFit ? [0] : [0,1]){
@@ -3226,7 +3233,7 @@ function nextTierHint(key, r){
   const parts = [];
   if(best.s) parts.push(`sleep goal (+${Math.round(sleepNeed*10)/10}h)`);
   if(best.f) parts.push(`${fitNeed} more fitness min`);
-  if(best.c) parts.push(`${focusNeed} more focus min`);
+  if(best.c) parts.push(focusFor(key) ? `${focusNeed} more ${focusFor(key)} min` : `${state.goals.focusMins} min on a focus`);
   if(best.q) parts.push(`${best.q} more quest${best.q===1?'':'s'}`);
   return { text: parts.join(' + '), rarity: RARITY_TIERS[best.t] };
 }
@@ -3238,7 +3245,7 @@ function rarityExplain(r){
     `sleep goal ${r.sleepMet?'met':'not met'}`,
     `${r.questCount} quest${r.questCount===1?'':'s'} completed`,
     `${r.fitnessMins}/${state.goals.fitnessMins} min fitness`,
-    `${r.focusMins}/${state.goals.focusMins} min focus`
+    `${r.focusMins}/${state.goals.focusMins} min focus${focusFor(r.key) ? ' ('+focusFor(r.key)+')' : ''}`
   ];
   if(r.capped) parts.push(`held at ${r.rarity.name} until ${r.fitnessMet || r.focusMet ? 'both goals are' : 'a fitness or focus goal is'} met`);
   if(r.classes.missed) parts.push(`${r.classes.missed} class${r.classes.missed===1?'':'es'} missed (−${r.classes.missed} tier)`);
@@ -3256,8 +3263,11 @@ function renderRarityStrip(key){
     crit((r.sleepMet?'met':'')+' jump', r.sleepMet?'✓':'○', `Sleep ${sleepHoursFor(key)}/${state.goals.sleepHours}h`, '+2 when you hit your sleep goal · click to log sleep'),
     crit(r.questPoints>=4?'met':'', r.questPoints>=4?'✓':'○', `Quests ${Math.min(r.questCount,4)}/4`, '+1 per completed quest, up to 4'),
     crit((r.fitnessMet?'met':(r.capped?'locked':''))+' jump', r.fitnessMet?'✓':'○', `Fitness ${r.fitnessMins}/${goal}m`, `${goal} min in a FIT category · Epic needs fitness or focus, Legendary needs both · click to log a workout`),
-    crit(r.focusMet?'met':(r.capped?'locked':''), r.focusMet?'✓':'○', `Focus ${r.focusMins}/${state.goals.focusMins}m`,
-      state.projects.some(p=>p.focus) ? `${state.goals.focusMins} min in a FOCUS category · Epic needs fitness or focus, Legendary needs both` : 'Mark a category FOCUS in Settings → Categories')
+    crit(r.focusMet?'met':(r.capped?'locked':''), r.focusMet?'✓':'○',
+      `Focus <select class="focus-pick" onchange="setDayFocus('${key}', this.value)" aria-label="Focus category for this day">
+        <option value="">pick…</option>${focusOptions().map(p => `<option value="${escapeHtml(p.name)}" ${focusFor(key)===p.name?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}
+      </select> ${r.focusMins}/${state.goals.focusMins}m`,
+      `${state.goals.focusMins} min in the category you pick for this day · Epic needs fitness or focus, Legendary needs both`)
   ];
   const c = r.classes;
   if(c.total){
