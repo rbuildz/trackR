@@ -630,6 +630,14 @@
           <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="bedInput" id="wakeInput" placeholder="woke" onkeydown="endFieldKeydown(event,'bedInput',logSleep)" title="Woke up, e.g. 7:30. Leave empty for now (today only)"/>
           <button class="primary" id="logSleepBtn" onclick="logSleep()">Log</button>
         </div>
+        <div class="sublabel" style="margin-top:14px;">Naps <span class="sublabel-hint">· up to 90 min counts toward the goal</span></div>
+        <div class="row">
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-next="napEnd" id="napStart" placeholder="start" onkeydown="handleTimeBackspace(event)" title="Fell asleep: 2, 230p or now"/>
+          <span class="arrow">→</span>
+          <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="napStart" id="napEnd" placeholder="woke" onkeydown="endFieldKeydown(event,'napStart',logNap)" title="Woke up, or how long (25m, 1h30). Leave empty for now (today only)"/>
+          <button class="primary" onclick="logNap()">Log nap</button>
+        </div>
+        <div class="session-list" id="napSessions"></div>
       </div>
 
       <!-- Trends: one 2-week chart at a time, picked with the tabs -->
@@ -802,6 +810,7 @@
  *   icsSince   – first day missed classes count against rarity
  *   projects[].fitness – category counts toward goals.fitnessMins (one of the two gates above Rare)
  *   focus[day] – that day's focus category; its time counts toward goals.focusMins (the other gate)
+ *   logs[day][].nap – a Sleep-category session that's a daytime nap, not the night
  *   logs[day][].muscles – muscle groups a fitness session trained, e.g. ['Legs','Core']
  *   weight[day] – body weight logged that day, in goals.weightUnit ('lb'|'kg')
  *
@@ -1016,7 +1025,7 @@ function normalizeState(){
       if(!s || typeof s !== 'object' || !s.bed || !s.wake) return;
       const { bedDate, wakeDate } = sleepRange(s.bed, s.wake, k);
       state.logs[k].forEach(l=>{
-        if(l.project!=='Sleep') return;
+        if(l.project!=='Sleep' || l.nap) return;
         l.start = bedDate.toISOString(); l.end = wakeDate.toISOString(); l.ts = wakeDate.toISOString();
       });
     });
@@ -1790,7 +1799,7 @@ function removeLogEntry(dayKey, logId){
     state.logs[dayKey] = (state.logs[dayKey]||[]).filter(l=>l.id!==logId);
     const mins = entry.actualMins || 0;
     if(entry.project==='Rotting') state.rotting[dayKey] = Math.max(0, (state.rotting[dayKey]||0) - mins);
-    if(entry.project==='Sleep') delete state.sleep[dayKey];
+    if(entry.project==='Sleep' && !entry.nap) delete state.sleep[dayKey];
     if(entry.icsKey){
       state.quests = state.quests.filter(q=>q.icsKey!==entry.icsKey);
     } else if(entry.questId){
@@ -1837,13 +1846,14 @@ function saveLogEdit(key, id){
   if(missing.length){ flagFields(missing); return; }
 
   let startDate, endDate, mins;
-  if(l.project==='Sleep'){
+  const isNight = l.project==='Sleep' && !l.nap;
+  if(isNight){
     const r = sleepRange(startVal, endVal, key);
     startDate = r.bedDate; endDate = r.wakeDate; mins = Math.round(r.hours*60);
   } else {
     ({ startDate, endDate, mins } = parseTimeRange(startVal, endVal, key));
   }
-  const problem = rangeProblem(startDate, endDate, l.project==='Sleep');
+  const problem = rangeProblem(startDate, endDate, isNight);
   if(problem){ flagFields([/start time|bed time/.test(problem) ? 'logEditStart' : 'logEditEnd']); showUndoToast(problem); return; }
 
   editingLogId = null;
@@ -1855,6 +1865,8 @@ function saveLogEdit(key, id){
     if(live.project==='Rotting'){
       state.rotting[key] = Math.max(0, (state.rotting[key]||0) + delta);
       live.title = `Rotted ${mins}m`;
+    } else if(live.nap){
+      live.title = `Nap ${mins}m`;
     } else if(live.project==='Sleep'){
       const hours = Math.round((mins/60)*100)/100;
       state.sleep[key] = { bed:startVal, wake:endVal, hours };
@@ -2006,6 +2018,49 @@ function sleepHoursFor(key){
   return typeof s === 'number' ? s : (s.hours || 0);
 }
 
+// Naps: logged as Sleep-category sessions flagged `nap`, on the day they
+// happen, so they pair with the night before that day. Up to 90 min (one
+// full sleep cycle) counts toward the sleep goal. Because the credit is
+// capped, the night alone still has to come within 1.5h of the goal.
+// No penalty for a late nap: if it costs you sleep, the next night shows it.
+const NAP_CREDIT_MINS = 90;
+
+function napsFor(key){
+  return (state.logs[key]||[]).filter(l => l.nap);
+}
+
+function napMinsFor(key){
+  return napsFor(key).reduce((s,l)=>s+(l.actualMins||0), 0);
+}
+
+/** Night sleep plus nap credit: the number the sleep goal is checked against. */
+function sleepTotalFor(key){
+  return Math.round((sleepHoursFor(key) + Math.min(napMinsFor(key), NAP_CREDIT_MINS)/60)*100)/100;
+}
+
+/** What a nap of this length tends to do (shown, not scored). Under 30 min
+ *  stays in light sleep; 30–75 reaches deep sleep, so waking is groggy;
+ *  75+ is roughly a full cycle. After 4 PM it can cut into the night. */
+function napKind(l){
+  const m = l.actualMins || 0;
+  const kind = m < 30 ? 'power nap' : m < 75 ? 'deep sleep, may wake groggy' : 'full cycle';
+  const late = l.start && new Date(l.start).getHours() >= 16;
+  return late ? `${kind} · late, may cut into tonight` : kind;
+}
+
+function logNap(){
+  const range = readRange('napStart','napEnd');
+  if(!range) return;
+  const key = selectedDayKey;
+  const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
+  withUndo(`Logged ${mins}m nap${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => {
+    addLog(key, { title:`Nap ${mins}m`, project:'Sleep', nap:true, actualMins:mins,
+      start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString() });
+    document.getElementById('napStart').value = '';
+    document.getElementById('napEnd').value = '';
+  });
+}
+
 /** Formats a 24-hour "HH:MM" string as a 12-hour clock string, e.g. "23:05" → "11:05 PM". */
 function formatTime12(hhmm){
   const [h,m] = hhmm.split(':').map(Number);
@@ -2044,7 +2099,8 @@ function lastSleepTimes(key){
  *  is a single tap on Log. */
 function renderSleepTile(key){
   const entry = state.sleep[key];
-  const hours = sleepHoursFor(key);
+  const hours = sleepTotalFor(key);
+  const napMins = napMinsFor(key), napCredit = Math.min(napMins, NAP_CREDIT_MINS);
   const goal = state.goals.sleepHours;
   const weekday = dayDate(key).toLocaleDateString([], {weekday:'short'});
   const logged = entry && entry.bed && entry.wake;
@@ -2063,7 +2119,15 @@ function renderSleepTile(key){
   const range = logged ? `${formatTime12(entry.bed)} → ${formatTime12(entry.wake)} · ` : '';
   document.getElementById('sleepMeterLabel').textContent = !hours
     ? (usual ? 'Not logged · filled in from your last night' : 'Not logged yet')
-    : range + (hours >= goal ? 'goal met' : `${Math.round((goal-hours)*10)/10}h short of ${goal}h`);
+    : range + (napMins ? (napMins > napCredit ? `+ ${napCredit}m of ${napMins}m nap · ` : `+ ${napMins}m nap · `) : '')
+      + (hours >= goal ? 'goal met' : `${Math.round((goal-hours)*10)/10}h short of ${goal}h`);
+  document.getElementById('napSessions').innerHTML = napsFor(key)
+    .sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts))
+    .map(l => `
+    <div class="session">
+      <span>${l.start ? fmtTime(l.start)+' – '+fmtTime(l.end) : fmtTime(l.ts)} · <b>${l.actualMins}m</b> · ${napKind(l)}</span>
+      <button class="xbtn" onclick="removeLogEntry('${key}','${l.id}')" title="Remove this nap" aria-label="Remove this nap">×</button>
+    </div>`).join('');
 
   const bed = document.getElementById('bedInput'), wake = document.getElementById('wakeInput');
   if(sleepInputsKey !== key || (!bed.value && !wake.value)){
@@ -2085,8 +2149,8 @@ function logSleep(){
 
   withUndo(`Logged ${hours}h sleep${key===todayKey() ? '' : ' for '+dayLabel(key)}`, () => {
     state.sleep[key] = { bed, wake, hours };
-    // Only one sleep entry makes sense per day, so replace any existing one.
-    state.logs[key] = (state.logs[key]||[]).filter(l => l.project !== 'Sleep');
+    // Only one night makes sense per day, so replace any existing one (naps stay).
+    state.logs[key] = (state.logs[key]||[]).filter(l => l.project !== 'Sleep' || l.nap);
     addLog(key, {
       title: `Slept ${hours}h`, project:'Sleep', actualMins: Math.round(hours*60),
       start: bedDate.toISOString(), end: wakeDate.toISOString(), ts: wakeDate.toISOString()
@@ -3126,7 +3190,7 @@ function dayStats(key){
   const cleared = log.filter(l=>l.project!=='Rotting' && l.project!=='Sleep').length;
   // Sleep has its own number everywhere, so it isn't "time logged".
   const mins = log.filter(l=>l.project!=='Sleep').reduce((s,l)=>s+(l.actualMins!=null ? l.actualMins : (l.est||0)),0);
-  const sleep = sleepHoursFor(key);
+  const sleep = sleepTotalFor(key);
   // Rotting is a plain category now, so count its logged sessions (however
   // they were logged); fall back to the old running total for legacy days.
   const rotLogs = log.filter(l=>l.project==='Rotting');
@@ -3171,7 +3235,7 @@ function rarityForScore(score){
  * Returns the final tier plus every input, for the breakdown strip/tooltips.
  */
 function dayRarity(key){
-  const sleepMet = state.goals.sleepHours > 0 && sleepHoursFor(key) >= state.goals.sleepHours;
+  const sleepMet = state.goals.sleepHours > 0 && sleepTotalFor(key) >= state.goals.sleepHours;
   const questCount = state.completedCounts[key] || 0;
   const questPoints = Math.min(questCount, 4);
   const fitnessMins = fitnessMinsFor(key);
@@ -3205,7 +3269,7 @@ function tierFor({ sleepMet, questCount, fitnessMet, focusMet, missed }){
 function nextTierHint(key, r){
   if(r.tier >= RARITY_TIERS.length-1) return null;
   const target = r.tier + 1;
-  const sleepNeed = Math.max(0, state.goals.sleepHours - sleepHoursFor(key));
+  const sleepNeed = Math.max(0, state.goals.sleepHours - sleepTotalFor(key));
   const fitNeed = Math.max(0, state.goals.fitnessMins - r.fitnessMins);
   const focusNeed = Math.max(0, state.goals.focusMins - r.focusMins);
   // A goal with no category flagged for it can't be met, so don't suggest it.
@@ -3260,7 +3324,7 @@ function renderRarityStrip(key){
   const crit = (cls, mark, text, title) => `<span class="crit ${cls}" ${title?`title="${escapeHtml(title)}"`:''}${cls.includes('jump')?' onclick="jumpToHealth()" role="button" tabindex="0"':''}><span class="ck">${mark}</span>${text}</span>`;
   const items = [
     `<span class="rs-tier" style="color:${r.rarity.color}" title="${escapeHtml(rarityExplain(r))}">${swordSVG(r.rarity.color, 12, 18)} ${r.rarity.name}</span>`,
-    crit((r.sleepMet?'met':'')+' jump', r.sleepMet?'✓':'○', `Sleep ${sleepHoursFor(key)}/${state.goals.sleepHours}h`, '+2 when you hit your sleep goal · click to log sleep'),
+    crit((r.sleepMet?'met':'')+' jump', r.sleepMet?'✓':'○', `Sleep ${sleepTotalFor(key)}/${state.goals.sleepHours}h`, '+2 when you hit your sleep goal (night + up to 90 min of naps) · click to log sleep'),
     crit(r.questPoints>=4?'met':'', r.questPoints>=4?'✓':'○', `Quests ${Math.min(r.questCount,4)}/4`, '+1 per completed quest, up to 4'),
     crit((r.fitnessMet?'met':(r.capped?'locked':''))+' jump', r.fitnessMet?'✓':'○', `Fitness ${r.fitnessMins}/${goal}m`, `${goal} min in a FIT category · Epic needs fitness or focus, Legendary needs both · click to log a workout`),
     crit(r.focusMet?'met':(r.capped?'locked':''), r.focusMet?'✓':'○',
@@ -3552,8 +3616,8 @@ function logSpans(key, pred){
 }
 
 const TREND_METRICS = {
-  sleep:   { label:'Sleep',   amount: k => sleepHoursFor(k), goal: () => state.goals.sleepHours, fmt: v => v+'h',
-             spans: k => logSpans(k, l => l.project==='Sleep'), defaultRange: [-180, 600], gapWhenZero: true },
+  sleep:   { label:'Sleep',   amount: k => sleepTotalFor(k), goal: () => state.goals.sleepHours, fmt: v => v+'h',
+             spans: k => logSpans(k, l => l.project==='Sleep' && !l.nap), defaultRange: [-180, 600], gapWhenZero: true },
   fitness: { label:'Fitness', amount: k => fitnessMinsFor(k), goal: () => state.goals.fitnessMins, fmt: v => v+'m',
              spans: k => logSpans(k, l => isFitnessProject(l.project)), defaultRange: [360, 1320] },
   quests:  { label:'Quests',  amount: k => state.completedCounts[k]||0, goal: () => 4, fmt: v => String(v) },
