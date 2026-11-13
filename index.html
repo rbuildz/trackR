@@ -944,6 +944,8 @@ function normalizeState(){
   if(typeof state.rotting !== 'object' || state.rotting===null) state.rotting = {};
   if(typeof state.meals !== 'object' || state.meals===null) state.meals = {};
   if(!Array.isArray(state.archivedKeys)) state.archivedKeys = [];
+  // Archives went weekly; count from now so the switch doesn't download one at once.
+  if(!state.lastArchiveDay) state.lastArchiveDay = todayKey();
   if(!state.goals || typeof state.goals !== 'object') state.goals = { sleepHours: 8, rotMins: 60 };
   if(typeof state.goals.sleepHours !== 'number') state.goals.sleepHours = 8;
   if(typeof state.goals.rotMins !== 'number') state.goals.rotMins = 60;
@@ -1056,8 +1058,8 @@ function ensureRecurringQuests(){
  * - Drops completed quests older than the 7-day window (newer ones stay so
  *   past days in the day bar still show what got finished).
  * - Re-seeds any recurring quest templates that don't have a live instance.
- * - Auto-archives the day that just fell outside the rolling 7-day window,
- *   so nothing is lost once "This week" stops showing it.
+ * - Once a week, downloads one archive file with every day that has fallen
+ *   outside the rolling 7-day window since the last one (see archiveDue).
  * Returns true if a rollover actually happened.
  */
 function performRollover(){
@@ -1068,13 +1070,14 @@ function performRollover(){
   state.quests = state.quests.filter(q => q.status !== 'completed' || (q.completedDay && q.completedDay >= cutoff));
   ensureRecurringQuests();
 
-  const fallingOffKey = keyMinusDays(key, 7);
-  const hasData = (state.logs[fallingOffKey] && state.logs[fallingOffKey].length)
-    || state.sleep[fallingOffKey] || state.rotting[fallingOffKey]
-    || (state.meals[fallingOffKey] && state.meals[fallingOffKey].length);
-  if(hasData && !state.archivedKeys.includes(fallingOffKey)){
-    exportSingleDay(fallingOffKey);
-    state.archivedKeys.push(fallingOffKey);
+  // A new day starts with the last focus you picked; change it any time.
+  if(!state.focus[key] && state.focus[state.lastSeen]) state.focus[key] = state.focus[state.lastSeen];
+
+  const pending = archiveDue(key);
+  if(pending.length){
+    exportArchive(pending);
+    state.archivedKeys.push(...pending);
+    state.lastArchiveDay = key;
   }
 
   // If the day view was pinned to "today", follow the rollover forward so the
@@ -1108,7 +1111,7 @@ function load(){
   ensureRecurringQuests();
   state.lastSeen = todayKey();
   selectedDayKey = state.lastSeen;
-  save();
+  save({ history:false });
 
   restoreSettingsOpen();
   render();
@@ -1123,20 +1126,68 @@ function startClock(){
     document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
     updateTimerDisplays();
     renderTimerCheck();
-    if(performRollover()){ save(); render(); }
+    if(performRollover()){ save({ history:false, clearHistory:true }); render(); }
   };
   tick();
   setInterval(tick, 1000);
 }
 
-let saveCount = 0; // bumps on every save, so Ctrl+Z knows nothing happened since
+let saveCount = 0; // bumps on every save, so an Undo knows whether anything happened since
 
-function save(){
+// Undo history. Every save that changes something pushes the state before
+// it, so Ctrl+Z steps back through *any* action, not just ones with a toast.
+// Saves the app makes on its own (loading, day rollover, streak record) pass
+// { history:false }; a rollover also clears history, since undoing across it
+// would re-run it (and re-download the archive).
+const UNDO_LIMIT = 50;
+let undoStack = [], redoStack = [];
+let lastSavedJSON = null;
+let nextUndoLabel = null; // set by withUndo so Ctrl+Z can say what it undid
+
+function save(opts){
   saveCount++;
   try{
     normalizeState();
-    localStorage.setItem('trackr-data', JSON.stringify(state));
+    const json = JSON.stringify(state);
+    if(opts && opts.history === false){
+      if(opts.clearHistory){ undoStack = []; redoStack = []; }
+    } else if(lastSavedJSON !== null && json !== lastSavedJSON){
+      undoStack.push({ json: lastSavedJSON, label: nextUndoLabel });
+      if(undoStack.length > UNDO_LIMIT) undoStack.shift();
+      redoStack = [];
+    }
+    nextUndoLabel = null;
+    lastSavedJSON = json;
+    localStorage.setItem('trackr-data', json);
   }catch(e){console.error('save failed', e);}
+}
+
+/** Swaps in a saved state without adding a history step. */
+function restoreState(json){
+  state = JSON.parse(json);
+  normalizeState();
+  editingLogId = null;
+  saveCount++;
+  lastSavedJSON = JSON.stringify(state);
+  try{ localStorage.setItem('trackr-data', lastSavedJSON); }catch(e){ console.error('save failed', e); }
+  render();
+}
+
+function undoLast(quiet){
+  const step = undoStack.pop();
+  if(!step){ showUndoToast('Nothing to undo'); return; }
+  redoStack.push({ json: lastSavedJSON, label: step.label });
+  restoreState(step.json);
+  lastUndo = null;
+  if(!quiet) showUndoToast(step.label ? `Undid: ${step.label}` : 'Undid the last change');
+}
+
+function redoLast(){
+  const step = redoStack.pop();
+  if(!step){ showUndoToast('Nothing to redo'); return; }
+  undoStack.push({ json: lastSavedJSON, label: step.label });
+  restoreState(step.json);
+  showUndoToast(step.label ? `Redid: ${step.label}` : 'Redid the last change');
 }
 
 function colorFor(project){
@@ -1208,11 +1259,17 @@ let lastUndo = null;
 function withUndo(message, mutate){
   const snapshot = JSON.stringify(state);
   mutate();
+  nextUndoLabel = message;
   save(); render();
+  const at = saveCount;
+  // The toast's Undo is the same as Ctrl+Z while this is still the last
+  // change; after something else, it restores this snapshot as a new step.
   const restore = () => {
+    if(saveCount === at && undoStack.length){ undoLast(true); return; }
     lastUndo = null;
     state = JSON.parse(snapshot);
     normalizeState();
+    nextUndoLabel = `Undo of ${message}`;
     save(); render();
   };
   lastUndo = { restore, at: saveCount, message };
@@ -1287,20 +1344,18 @@ function shiftDay(delta){
   selectDay(keyMinusDays(selectedDayKey, -delta));
 }
 
-// Ctrl/⌘+Z: undo the last action. Inside a text box it stays the browser's
-// own typing undo. Esc: clear the box you're in; Esc again leaves it.
+// Ctrl/⌘+Z: undo the last action (again for the one before, and so on);
+// Ctrl/⌘+Shift+Z or Ctrl+Y: redo. In a text box with something typed in it,
+// they stay the browser's own typing undo. Esc: clear the box you're in;
+// Esc again leaves it.
 // (Rename and timeline edits handle Esc themselves — it cancels the edit.)
 document.addEventListener('keydown', e => {
   const el = e.target, tag = (el.tagName||'').toLowerCase();
   const typing = tag==='textarea' || (tag==='input' && !['checkbox','color','file'].includes(el.type));
-  if((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase()==='z' && !typing){
+  const k = e.key.toLowerCase();
+  if((e.ctrlKey || e.metaKey) && !e.altKey && (k==='z' || k==='y') && !(typing && el.value)){
     e.preventDefault();
-    if(lastUndo && lastUndo.at === saveCount){
-      const { restore, message } = lastUndo;
-      restore();
-      document.getElementById('undoToast').style.display = 'none';
-      showUndoToast(`Undid: ${message}`);
-    } else showUndoToast('Nothing to undo');
+    if(k==='y' || e.shiftKey) redoLast(); else undoLast();
     return;
   }
   if(e.key==='Escape' && !e.defaultPrevented && (typing || tag==='select')){
@@ -1402,10 +1457,10 @@ function addCategory(){
   if(!name){ flagFields(['newCatName']); return; }
   if(state.projects.some(p=>p.name.toLowerCase()===name.toLowerCase())) { nameEl.value=''; showUndoToast(`"${name}" already exists`); return; }
   const fitEl = document.getElementById('newCatFitness');
-  state.projects.push({ name, color: colorEl.value, fitness: fitEl.checked });
+  const fitness = fitEl.checked;
   nameEl.value = '';
   fitEl.checked = false;
-  save(); render();
+  withUndo(`Added category "${name}"`, () => { state.projects.push({ name, color: colorEl.value, fitness }); });
 }
 
 /** Removes a category. Existing quests/logs that reference it keep working —
@@ -3436,7 +3491,7 @@ function renderRarityBadge(){
   lastRarityTierIndex = tierIndex;
 
   const streak = computeRarityStreak();
-  if(streak > state.bestStreak){ state.bestStreak = streak; save(); }
+  if(streak > state.bestStreak){ state.bestStreak = streak; save({ history:false }); }
   const streakEl = document.getElementById('rarityStreak');
   streakEl.textContent = streak > 0 ? `· ${streak}d Rare+ streak` : '';
   streakEl.title = `Best streak: ${state.bestStreak} day${state.bestStreak===1?'':'s'}`;
@@ -3577,7 +3632,7 @@ function downloadText(filename, content, mimeType){
  *  between browsers/devices, since localStorage never travels with the file. */
 function exportJSON(){
   state.lastBackup = new Date().toISOString();
-  save();
+  save({ history:false });
   downloadText(`trackr-backup-${todayKey()}.json`, JSON.stringify(state, null, 2), 'application/json');
   renderBackupAge();
 }
@@ -3835,23 +3890,33 @@ function importJSON(e){
       showUndoToast('Backup restored', () => { state = JSON.parse(snapshot); normalizeState(); save(); render(); });
     }catch(err){
       console.error('import failed', err);
-      alert("Couldn't read that file. Make sure it's a trackR backup .json file.");
+      showUndoToast("Couldn't read that file. Make sure it's a trackR backup .json file.");
     }
   };
   reader.readAsText(file);
   e.target.value = ''; // allow re-selecting the same file again later
 }
 
-/** Auto-archives a single day's report when it falls outside the rolling
- *  7-day window (called from performRollover), so its data survives even
- *  though "This week" stops showing it. */
-function exportSingleDay(key){
-  const date = dayDate(key);
-  let out = "TRACKR · DAY ARCHIVE\n";
-  out += "Auto-saved on rollover (day fell outside the 7-day window)\n";
+/** Days to archive on `key`, oldest first: those with anything logged that
+ *  have left the 7-day window and aren't archived yet. Empty unless a week
+ *  has passed since the last archive, so it downloads at most once a week. */
+function archiveDue(key){
+  if(state.lastArchiveDay && state.lastArchiveDay > keyMinusDays(key, 7)) return [];
+  const oldest = keyMinusDays(key, 7), done = new Set(state.archivedKeys);
+  const hasData = k => (state.logs[k] && state.logs[k].length) || state.sleep[k] || state.rotting[k]
+    || (state.meals[k] && state.meals[k].length);
+  const keys = new Set([state.logs, state.sleep, state.rotting, state.meals].flatMap(o => Object.keys(o||{})));
+  return [...keys].filter(k => k <= oldest && !done.has(k) && hasData(k)).sort();
+}
+
+/** Downloads one text file covering the given days (from performRollover).
+ *  Everything stays in the app too; this is a readable copy to keep. */
+function exportArchive(keys){
+  let out = "TRACKR · WEEKLY ARCHIVE\n";
+  out += `${dayLabel(keys[0])} to ${dayLabel(keys[keys.length-1])} · saved ${new Date().toLocaleString()}\n`;
   out += "=".repeat(50) + "\n\n";
-  out += dayReportText(key, date);
-  downloadText(`trackr-archive-${key}.txt`, out);
+  keys.forEach(k => { out += dayReportText(k, dayDate(k)); });
+  downloadText(`trackr-archive-${keys[0]}-to-${keys[keys.length-1]}.txt`, out);
 }
 
 /** Manually exports the full current 7-day window as one text file
@@ -3978,7 +4043,6 @@ document.getElementById('newTitle').addEventListener('keydown', e => {
   if(e.key==='Tab' && !e.shiftKey && categoryGuess){ e.preventDefault(); document.getElementById('newStart').focus(); }
 });
 document.getElementById('newTitle').addEventListener('input', onTitleInput);
-document.getElementById('newCatName').addEventListener('keydown', e => { if(e.key==='Enter') addCategory(); });
 
 // Boot the app. If anything throws during load (e.g. unexpectedly malformed
 // localStorage data that normalizeState() couldn't fully repair), fall back
