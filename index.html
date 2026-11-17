@@ -126,7 +126,8 @@
     display:flex;gap:8px;flex-wrap:wrap;align-items:center;
   }
   .addbar input[type=text]{flex:1;min-width:180px;}
-  .addbar input.tin{flex:0 0 96px;min-width:0;}
+  .addbar input.pin{flex:0 0 104px;min-width:0;font-variant-numeric:tabular-nums;}
+  .addbar input.pin::placeholder{color:#555;}
   .addbar-hint{margin:8px 0 16px;min-height:12px;}
   input[type=text], select, input[type=number]{
     background:var(--panel);border:1px solid var(--border);color:var(--text);
@@ -185,6 +186,26 @@
     margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:6px;
   }
   .tag{font-size:10px;letter-spacing:0.5px;}
+  .card-meta .meta-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;}
+  .plan-tag{cursor:pointer;border-bottom:1px dashed var(--border-strong);color:var(--text);white-space:nowrap;}
+  .plan-tag.none{color:var(--text-mute);opacity:0;transition:opacity 0.1s;}
+  .card:hover .plan-tag.none, .card:focus-within .plan-tag.none{opacity:1;}
+  .plan-tag:hover{color:var(--gold);border-bottom-color:var(--gold);}
+  .plan-tag.due{color:var(--gold);}
+  .plan-tag.late, .plan-note.warn, .budget.over, .tag .over{color:var(--red);}
+  .plan-note{color:var(--text-mute);}
+  .plan-edit{width:150px;padding:2px 6px;font-family:'DM Mono',monospace;font-size:10px;}
+  .next-tag{color:var(--gold);letter-spacing:1px;text-transform:uppercase;}
+  .budget{font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);}
+  .col-divider{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-mute);margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--border);}
+  .card.later{opacity:0.7;}
+  .plan-summary{display:none;margin:-4px 0 16px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mute);}
+  .plan-summary.show{display:block;}
+  .plan-summary b{color:var(--text);font-weight:500;}
+  .plan-summary .warn{color:var(--red);}
+  .clock-arc-plan{fill:none;stroke-width:1.2;stroke-dasharray:3 2;opacity:0.85;}
+  .logrow.planned{opacity:0.6;}
+  .logrow.planned .lname{font-style:italic;}
   .card-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
   .card-actions button{padding:4px 8px;font-size:10px;}
   .card-actions{align-items:center;}
@@ -562,14 +583,15 @@
     <div class="addbar">
       <input type="text" autocomplete="off" id="newTitle" placeholder="Add a quest…" />
       <select id="newProject" title="Category" onchange="onCategoryPicked()"></select>
-      <input type="text" autocomplete="off" spellcheck="false" class="tin" data-next="newEnd" id="newStart" style="width:96px;" placeholder="start" oninput="updateAddButton()" onkeydown="handleTimeBackspace(event)" title="Already did it? When it started: 7, 730, 7:30p, 1930 or now"/>
+      <input type="text" autocomplete="off" spellcheck="false" class="pin" id="newStart" placeholder="start" oninput="updateAddButton()" onkeydown="planBoxKeydown(event)" title="When you plan to start: 3, 3p, 3:30, or tmrw 9a. Leave empty for no set time"/>
       <span class="arrow">→</span>
-      <input type="text" autocomplete="off" spellcheck="false" class="tin" data-kind="end" data-pair="newStart" id="newEnd" style="width:96px;" placeholder="end" oninput="updateAddButton()" onkeydown="endFieldKeydown(event,'newStart',addQuest)" title="When it ended, or how long (45m, 1h30). Empty = now (today only)"/>
+      <input type="text" autocomplete="off" spellcheck="false" class="pin" id="newEnd" placeholder="end or 45m" oninput="updateAddButton()" onkeydown="planBoxKeydown(event)" title="When you plan to finish (4, 4:15p), or how long you're giving it (45m, 1h30)"/>
       <label class="checklabel"><input type="checkbox" id="newRecurring"/> daily</label>
       <button class="primary" id="addQuestBtn" onclick="addQuest()">Add</button>
     </div>
     <div class="hint addbar-hint" id="addHint"></div>
     <div class="leftovers" id="leftovers"></div>
+    <div class="plan-summary" id="planSummary"></div>
 
     <div class="board">
       <div class="col" id="col-todo-wrap" ondragover="event.preventDefault(); this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="onDrop(event,'todo')">
@@ -809,6 +831,9 @@
  *   icsExcused – {icsKey: true} for class occurrences marked cancelled
  *   icsSince   – first day missed classes count against rarity
  *   projects[].fitness – category counts toward goals.fitnessMins (one of the two gates above Rare)
+ *   quests[].plan – { day, start:'HH:MM'|null, mins|null }: when you mean to do it and the time you're giving it
+ *   templates[].plan – { start, mins } a daily quest is planned with each day
+ *   planDone[day] – [{ id, project, plan, actual }] minutes planned vs taken for quests finished that day
  *   focus[day] – that day's focus category; its time counts toward goals.focusMins (the other gate)
  *   logs[day][].nap – a Sleep-category session that's a daytime nap, not the night
  *   logs[day][].muscles – muscle groups a fitness session trained, e.g. ['Legs','Core']
@@ -954,6 +979,7 @@ function normalizeState(){
   if(typeof state.icsExcused !== 'object' || state.icsExcused === null) state.icsExcused = {};
   if(typeof state.weight !== 'object' || state.weight === null) state.weight = {};
   if(typeof state.focus !== 'object' || state.focus === null) state.focus = {};
+  if(typeof state.planDone !== 'object' || state.planDone === null) state.planDone = {};
   state.projects.forEach(p => delete p.focus); // focus used to be a category flag
   if(state.goals.weightUnit !== 'kg') state.goals.weightUnit = 'lb';
   if(!Array.isArray(state.templates)) state.templates = [];
@@ -1045,10 +1071,13 @@ function ensureRecurringQuests(){
   state.templates.forEach(t=>{
     const hasActive = state.quests.some(q=>q.templateId===t.id && q.status==='todo');
     if(!hasActive){
-      state.quests.push({
-        id: uid(),
-        title:t.title, project:t.project, status:'todo', totalMins:0, completedAt:null, templateId:t.id, createdDay: todayKey()
-      });
+      const q = { id: uid(), title:t.title, project:t.project, status:'todo', totalMins:0, completedAt:null, templateId:t.id, createdDay: todayKey() };
+      if(t.plan){
+        // Already done today → the next one is for tomorrow.
+        const doneToday = state.quests.some(o=>o.templateId===t.id && o.status==='completed' && o.completedDay===todayKey());
+        q.plan = { day: doneToday ? keyMinusDays(todayKey(), -1) : todayKey(), start: t.plan.start || null, mins: t.plan.mins || null };
+      }
+      state.quests.push(q);
     }
   });
 }
@@ -1126,6 +1155,7 @@ function startClock(){
     document.getElementById('timeDisplay').textContent = new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
     updateTimerDisplays();
     renderTimerCheck();
+    checkPlanNudges();
     if(performRollover()){ save({ history:false, clearHistory:true }); render(); }
   };
   tick();
@@ -1230,10 +1260,11 @@ let undoTimer = null;
 
 /** Shows a toast for ~5 seconds. If restoreFn is given, the toast carries an
  *  "Undo" button that runs it to reverse whatever just happened. */
-function showUndoToast(message, restoreFn){
+function showUndoToast(message, restoreFn, actionLabel){
   undoRestoreFn = restoreFn || null;
   clearTimeout(undoTimer);
   document.getElementById('undoMsg').textContent = message;
+  document.getElementById('undoBtn').textContent = actionLabel || 'Undo';
   document.getElementById('undoBtn').style.display = restoreFn ? '' : 'none';
   document.getElementById('undoToast').style.display = 'flex';
   undoTimer = setTimeout(()=>{
@@ -1475,16 +1506,25 @@ function removeCategory(idx){
 // 3. QUESTS (TO DO / COMPLETED BOARD)
 // ---------------------------------------------------------------------------
 
-/** Switches the add button between "Add quest" and "Log & complete" based on
- *  whether a time range is filled in, and explains what will happen. */
+/** The line under the add bar: how the plan was read (from the start / end
+ *  boxes, or from plan words typed after the title), and how far this
+ *  category usually runs over its plans. */
 function updateAddButton(){
-  const hasTimes = document.getElementById('newStart').value || document.getElementById('newEnd').value;
-  document.getElementById('addQuestBtn').textContent = hasTimes ? 'Log it' : 'Add';
-  const where = isViewingToday() ? 'today' : dayLabel(selectedDayKey);
   const guess = categoryGuess ? ` Category: ${categoryGuess.project}, from ${categoryGuess.why}.` : '';
-  document.getElementById('addHint').textContent = (hasTimes
-    ? `Logs it as done ${isViewingToday() ? 'today' : 'on '+where}.`
-    : `Already did it? Add the times and it goes straight to Done.`) + guess;
+  const boxes = readPlanBoxes();
+  const typed = parsePlanText(document.getElementById('newTitle').value);
+  const raw = boxes.plan || (typed.plan && typed.title ? typed.plan : null);
+  let planned = '';
+  if(boxes.bad) planned = `Can't read that time. Try 3p, 3:30 or tmrw 9a for the start, and 4p or 45m for the end.`;
+  else if(raw){
+    const plan = buildPlan(raw), project = document.getElementById('newProject').value;
+    planned = `Plan: ${planLabel(plan) || 'today'}.`;
+    const ratio = plan.mins ? planRatio(project) : null;
+    if(ratio && Math.abs(ratio - 1) >= 0.15){
+      planned += ` ${project} usually takes ${ratio.toFixed(1)}× your plan, so ${fmtMins(plan.mins)} tends to be about ${fmtMins(Math.round(plan.mins*ratio/5)*5)}.`;
+    }
+  }
+  document.getElementById('addHint').textContent = (planned || 'Fill in start and end to plan it. End can be a time or a length like 45m.') + guess;
 }
 
 // ---------------------------------------------------------------------------
@@ -1539,7 +1579,7 @@ function onTitleInput(){
   const titleEl = document.getElementById('newTitle'), sel = document.getElementById('newProject');
   if(!titleEl.value.trim()) categoryTouched = false;
   if(categoryTouched){ updateAddButton(); return; }
-  categoryGuess = guessCategory(titleEl.value);
+  categoryGuess = guessCategory(parsePlanText(titleEl.value).title || titleEl.value);
   const pick = categoryGuess ? categoryGuess.project : lastCategory();
   if(pick) sel.value = pick;
   updateAddButton();
@@ -1551,43 +1591,422 @@ function onCategoryPicked(){
   updateAddButton();
 }
 
-/** Adds a new quest in the "To do" column. If a time range is filled in, it
- *  instead logs that session to the selected day and files the quest as
- *  completed there — the quick way to back-fill something you already did.
- *  If "repeat daily" is checked, it also creates a recurring template. */
+// ---------------------------------------------------------------------------
+// 3a. PLANS — a quest can carry when you mean to do it and how long you're
+// giving it: q.plan = { day, start, mins }. Typed at the end of the title
+// ("Econ hw 3p 45m", "Gym tmrw 5p-6p", "Reading 1h") or on the card's plan
+// tag. The plan orders the To do column, draws an outline on the clocks,
+// gives a running timer a countdown, and is compared with the time actually
+// taken once the quest is done.
+// ---------------------------------------------------------------------------
+const PLAN_DAY_WORDS = { today:0, tonight:0, tmrw:1, tmr:1, tomorrow:1 };
+const PLAN_WEEKDAYS = { sun:0, sunday:0, mon:1, monday:1, tue:2, tues:2, tuesday:2, wed:3, wednesday:3,
+  thu:4, thur:4, thurs:4, thursday:4, fri:5, friday:5, sat:6, saturday:6 };
+const PLAN_FILLER = new Set(['at', 'for', 'on', '@']);
+
+/** "3p", "3:30pm", "730p", "15:00", "noon" → minutes from midnight, else null.
+ *  A bare "3:30" is read as the waking-hours one: 1–6 PM, 7–11 AM. */
+function planTimeToken(tok, fallbackSuffix){
+  if(tok === 'noon') return 720;
+  let m = /^(\d{1,2})(?::?(\d{2}))?(a|p|am|pm)$/.exec(tok);
+  if(m){
+    let h = +m[1]; const mm = +(m[2]||0);
+    if(h < 1 || h > 12 || mm > 59) return null;
+    h = h % 12 + (m[3][0] === 'p' ? 12 : 0);
+    return h*60 + mm;
+  }
+  m = /^(\d{1,2}):(\d{2})$/.exec(tok) || (fallbackSuffix ? /^(\d{1,2})()$/.exec(tok) : null);
+  if(!m) return null;
+  let h = +m[1]; const mm = +(m[2]||0);
+  if(h > 23 || mm > 59) return null;
+  if(fallbackSuffix && h >= 1 && h <= 12) h = h % 12 + (fallbackSuffix === 'p' ? 12 : 0);
+  else if(h >= 1 && h <= 6) h += 12;
+  return h*60 + mm;
+}
+
+/** "45m", "1h", "1.5h", "1h30", "90min" → minutes, else null. */
+function planMinsToken(tok){
+  let m = /^(\d+(?:\.\d+)?)h(?:(\d{1,2})m?)?$/.exec(tok);
+  let mins = m ? Math.round(+m[1]*60) + +(m[2]||0) : null;
+  if(mins == null){ m = /^(\d+)(?:m|min|mins)$/.exec(tok); mins = m ? +m[1] : null; }
+  return mins != null && mins >= 1 && mins <= 720 ? mins : null;
+}
+
+/** Reads plan words off the END of a line of text. Returns the text left
+ *  over as the title and { dayOffset, start, mins } (minutes), or plan:null
+ *  when there are none. Only trailing words count, so "Read 1h of notes"
+ *  stays a title. A short weekday ("fri") only counts next to a time or a
+ *  length, so "Email Sun" isn't taken for Sunday. */
+function parsePlanText(text){
+  const words = String(text||'').trim().split(/\s+/).filter(Boolean);
+  const plan = {};
+  let softDay = null, end = words.length;
+  for(let i = words.length-1; i >= 0; i--){
+    const tok = words[i].toLowerCase().replace(/^@/, '').replace(/[.,]$/, '');
+    if(PLAN_FILLER.has(words[i].toLowerCase()) && end === i+1 && end < words.length){ end = i; continue; }
+    let used = false;
+    const range = /^(.+?)-(.+)$/.exec(tok);
+    if(range && plan.start == null && plan.mins == null){
+      const b = planTimeToken(range[2]);
+      const suffix = (/(a|p)m?$/.exec(range[2])||[])[1];
+      let a = b != null ? (planTimeToken(range[1]) ?? planTimeToken(range[1], suffix)) : null;
+      if(a != null && b != null){
+        if(a >= b && a >= 720) a -= 720;   // "11-1p" → 11 AM to 1 PM
+        if(b > a){ plan.start = a; plan.mins = b - a; used = true; }
+      }
+    }
+    if(!used){
+      const t = planTimeToken(tok), d = planMinsToken(tok);
+      if(t != null && plan.start == null){ plan.start = t; used = true; }
+      else if(t != null && plan.mins == null && plan.start > t){ plan.mins = plan.start - t; plan.start = t; used = true; } // "3p 4p"
+      else if(d != null && plan.mins == null){ plan.mins = d; used = true; }
+      else if(tok in PLAN_DAY_WORDS && plan.dayOffset == null){ plan.dayOffset = PLAN_DAY_WORDS[tok]; used = true; }
+      else if(tok in PLAN_WEEKDAYS && plan.dayOffset == null && softDay == null){
+        const off = ((PLAN_WEEKDAYS[tok] - dayDate(todayKey()).getDay() + 7) % 7) || 7;
+        if(tok.length > 5) plan.dayOffset = off; else softDay = off;
+        used = true;
+      }
+    }
+    if(!used) break;
+    end = i;
+  }
+  if(softDay != null){
+    if(plan.start != null || plan.mins != null) plan.dayOffset = softDay;
+    else return { title: words.join(' '), plan: null };
+  }
+  const has = plan.start != null || plan.mins != null || plan.dayOffset != null;
+  return { title: words.slice(0, end).join(' '), plan: has ? plan : null };
+}
+
+const hhmmFromMins = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+
+/** Turns parsed plan words into what's stored on the quest. */
+function buildPlan(parsed){
+  return {
+    day: keyMinusDays(todayKey(), -(parsed.dayOffset || 0)),
+    start: parsed.start != null ? hhmmFromMins(parsed.start) : null,
+    mins: parsed.mins != null ? parsed.mins : null
+  };
+}
+
+/** The real moment a plan starts. Times before 5 AM belong to the night
+ *  that follows the plan's day, like everything else in a logical day. */
+function planStartDate(plan){
+  if(!plan || !plan.start) return null;
+  const [h, m] = plan.start.split(':').map(Number);
+  const d = dayDate(plan.day);
+  d.setHours(h, m, 0, 0);
+  if(h < 5) d.setDate(d.getDate()+1);
+  return d;
+}
+
+/** "Tmrw" / "Fri" / "was Mon" / '' (today) for a plan's day. */
+function planDayWord(plan){
+  const today = todayKey();
+  if(plan.day === today) return '';
+  if(plan.day === keyMinusDays(today, -1)) return 'Tmrw';
+  const wd = dayDate(plan.day).toLocaleDateString([], {weekday:'short'});
+  if(plan.day < today) return plan.day === keyMinusDays(today, 1) ? 'was yesterday' : 'was ' + wd;
+  return plan.day <= keyMinusDays(today, -6) ? wd : dayDate(plan.day).toLocaleDateString([], {month:'short', day:'numeric'});
+}
+
+/** "Tmrw · 3:00 PM · 45m" */
+function planLabel(plan){
+  return [planDayWord(plan), plan.start ? fmtTime(planStartDate(plan)) : '', plan.mins ? fmtMins(plan.mins) : ''].filter(Boolean).join(' · ');
+}
+
+/** The plan as you'd type it, for the card's edit box: "tmrw 3:30p 45m". */
+function planAsTyped(plan){
+  if(!plan) return '';
+  const today = todayKey(), parts = [];
+  if(plan.day === keyMinusDays(today, -1)) parts.push('tmrw');
+  else if(plan.day > today && plan.day <= keyMinusDays(today, -7)) parts.push(dayDate(plan.day).toLocaleDateString('en-US', {weekday:'short'}).toLowerCase());
+  if(plan.start){ const [h, m] = plan.start.split(':').map(Number); parts.push(shortClock(h*60+m)); }
+  if(plan.mins) parts.push(plan.mins % 60 ? (plan.mins >= 60 ? Math.floor(plan.mins/60)+'h'+(plan.mins%60) : plan.mins+'m') : (plan.mins/60)+'h');
+  return parts.join(' ');
+}
+
+/** A clock time typed into a plan box, as minutes from midnight. With am/pm
+ *  it means what it says. A bare "3" or "330" is the next one coming up
+ *  today (3 PM if it's 10 AM); with `after` it's the first one past that
+ *  start; for another day it's the waking-hours one (1–6 PM, 7–11 AM). */
+function planBoxTime(raw, opts){
+  opts = opts || {};
+  const tok = String(raw).toLowerCase().replace(/\s+/g, '');
+  if(tok === 'now'){ const n = new Date(); return n.getHours()*60 + n.getMinutes(); }
+  if(/[ap]m?$/.test(tok) || tok === 'noon') return planTimeToken(tok);
+  const m = /^(\d{1,2})(?::?(\d{2}))?$/.exec(tok);
+  if(!m) return null;
+  const h = +m[1], mm = +(m[2]||0);
+  if(h > 23 || mm > 59) return null;
+  if(h > 12 || h === 0) return h*60 + mm;
+  const am = (h % 12)*60 + mm, pm = am + 720;
+  if(opts.after != null) return am > opts.after ? am : pm > opts.after ? pm : null;
+  if(opts.today){
+    const n = new Date(), nowM = n.getHours()*60 + n.getMinutes();
+    if(am >= nowM) return am;
+    if(pm >= nowM) return pm;
+  }
+  return h >= 7 && h <= 11 ? am : pm;
+}
+
+/** Reads the add bar's start / end boxes as a plan. Start takes a time,
+ *  optionally after a day ("tmrw 9a", "fri 2p"); end takes a finish time or
+ *  a length ("45m"). Returns { plan } in parsePlanText's shape (null when
+ *  both are empty) or { bad: [ids] } for the boxes it couldn't read. */
+function readPlanBoxes(){
+  const sv = document.getElementById('newStart').value.trim(), ev = document.getElementById('newEnd').value.trim();
+  if(!sv && !ev) return { plan: null };
+  const plan = {};
+  if(sv){
+    const words = sv.toLowerCase().replace(/\s+(?=[ap]m?$)/, '').split(/\s+/);
+    if(words.length > 1){
+      const d = words.shift();
+      if(d in PLAN_DAY_WORDS) plan.dayOffset = PLAN_DAY_WORDS[d];
+      else if(d in PLAN_WEEKDAYS) plan.dayOffset = ((PLAN_WEEKDAYS[d] - dayDate(todayKey()).getDay() + 7) % 7) || 7;
+      else return { bad: ['newStart'] };
+    }
+    const w = words.join('');
+    const len = planMinsToken(w);
+    if(len != null && !ev) plan.mins = len;            // just "45m" in the first box
+    else if(w in PLAN_DAY_WORDS && plan.dayOffset == null) plan.dayOffset = PLAN_DAY_WORDS[w];
+    else {
+      const t = planBoxTime(w, { today: !plan.dayOffset });
+      if(t == null) return { bad: ['newStart'] };
+      plan.start = t;
+    }
+  }
+  if(ev){
+    const len = planMinsToken(ev.toLowerCase().replace(/\s+/g, '').replace(/^\+/, ''));
+    if(len != null) plan.mins = len;
+    else {
+      if(plan.start == null) return { bad: [sv ? 'newEnd' : 'newStart'] };
+      const t = planBoxTime(ev, { after: plan.start });
+      if(t == null || t - plan.start > 720) return { bad: ['newEnd'] };
+      plan.mins = t - plan.start;
+    }
+  }
+  return { plan };
+}
+
+/** Enter in the start box moves to the end box; Enter in the end box adds the quest. */
+function planBoxKeydown(e){
+  if(e.key !== 'Enter') return;
+  e.preventDefault();
+  if(e.target.id === 'newStart' && e.target.value.trim()) document.getElementById('newEnd').focus();
+  else addQuest();
+}
+
+// Leaving a plan box tidies what you typed ("3" → "3:00 PM") so you can see how it was read.
+document.addEventListener('focusout', e => {
+  if(e.target.id !== 'newStart' && e.target.id !== 'newEnd') return;
+  const r = readPlanBoxes();
+  if(!r.plan) return;
+  const clock = m => fmtTime(new Date(2000, 0, 1, Math.floor(m/60) % 24, m % 60));
+  const startEl = document.getElementById('newStart'), endEl = document.getElementById('newEnd');
+  if(r.plan.start != null){
+    const day = r.plan.dayOffset ? (r.plan.dayOffset === 1 ? 'Tmrw ' : dayDate(keyMinusDays(todayKey(), -r.plan.dayOffset)).toLocaleDateString('en-US', {weekday:'short'}) + ' ') : '';
+    startEl.value = day + clock(r.plan.start);
+    if(r.plan.mins != null && endEl.value.trim() && planMinsToken(endEl.value.toLowerCase().replace(/\s+/g, '').replace(/^\+/, '')) == null) endEl.value = clock(r.plan.start + r.plan.mins);
+  }
+});
+
+const samePlan = (a, b) => !!a === !!b && (!a || (a.day === b.day && a.start === b.start && a.mins === b.mins));
+
+/** Open quests planned for today (or left over from an earlier day). */
+function plansForToday(){
+  const today = todayKey();
+  return state.quests.filter(q => q.status==='todo' && q.plan && q.plan.day <= today);
+}
+
+// --- Editing a plan on the card ---
+let editingPlanId = null;
+
+function startPlanEdit(id){
+  editingPlanId = id;
+  render();
+  const el = document.getElementById('planEdit-'+id);
+  if(el){ el.focus(); el.select(); }
+}
+
+function planEditKeydown(e, id){
+  if(e.key==='Enter'){ e.preventDefault(); savePlanEdit(id); }
+  if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); editingPlanId = null; render(); }
+}
+
+/** Clicking away saves too; the short wait lets a click on another button land first. */
+function planEditBlur(id){
+  setTimeout(() => { if(editingPlanId === id) savePlanEdit(id, true); }, 150);
+}
+
+function savePlanEdit(id, fromBlur){
+  const el = document.getElementById('planEdit-'+id), q = state.quests.find(q=>q.id===id);
+  if(editingPlanId !== id || !el || !q) return;
+  const raw = el.value.trim();
+  const parsed = raw ? parsePlanText(raw) : null;
+  if(raw && (!parsed.plan || parsed.title)){
+    if(fromBlur){ editingPlanId = null; render(); return; }
+    el.classList.add('invalid');
+    showUndoToast('Type a time, a length, or both, like "3p 45m" or "tmrw 9a 1h"');
+    return;
+  }
+  const plan = raw ? buildPlan(parsed.plan) : null;
+  editingPlanId = null;
+  if(samePlan(plan, q.plan)){ render(); return; }
+  withUndo(plan ? `Planned "${q.title}": ${planLabel(plan) || 'today'}` : `Cleared the plan for "${q.title}"`, () => {
+    const live = state.quests.find(o=>o.id===id);
+    if(plan) live.plan = plan; else delete live.plan;
+  });
+}
+
+// --- How the plan went: minutes planned vs taken, kept per day ---
+function recordPlanResult(q, key){
+  if(!q.plan || !q.plan.mins || !(q.totalMins > 0)) return;
+  (state.planDone[key] = state.planDone[key] || []).push({ id:q.id, project:q.project, plan:q.plan.mins, actual:q.totalMins });
+}
+
+function forgetPlanResult(id){
+  Object.keys(state.planDone).forEach(k => { state.planDone[k] = state.planDone[k].filter(r => r.id !== id); });
+}
+
+/** Time taken as a % of time planned for quests finished that day (0 = none). */
+function planAccuracy(key){
+  const rows = state.planDone[key] || [];
+  const plan = rows.reduce((s,r)=>s+r.plan, 0), actual = rows.reduce((s,r)=>s+r.actual, 0);
+  return plan ? Math.round(actual/plan*100) : 0;
+}
+
+/** How long this category's quests usually run against their plan (median
+ *  of taken ÷ planned), once there are at least 3 to go on; else null. */
+function planRatio(project){
+  const rs = [];
+  Object.values(state.planDone).forEach(rows => rows.forEach(r => { if(r.project===project && r.plan > 0) rs.push(r.actual/r.plan); }));
+  if(rs.length < 3) return null;
+  rs.sort((a,b)=>a-b);
+  const mid = rs.length >> 1;
+  return rs.length % 2 ? rs[mid] : (rs[mid-1] + rs[mid]) / 2;
+}
+
+// --- Overlaps and the day's load ---
+/** quest id → names of the plans/classes it overlaps today. */
+function planOverlaps(){
+  const today = todayKey(), blocks = [];
+  state.quests.forEach(q => {
+    if(q.status!=='todo' || !q.plan || q.plan.day !== today || !q.plan.start || !q.plan.mins) return;
+    const s = planStartDate(q.plan).getTime();
+    blocks.push({ id:q.id, name:q.title, s, e: s + q.plan.mins*60000 });
+  });
+  calendarEventsForDay(today).forEach(ev => {
+    if(classStateFor(today, ev) === 'excused') return;
+    blocks.push({ id:null, name:ev.title, s:new Date(ev.start).getTime(), e:new Date(ev.end).getTime() });
+  });
+  const out = {};
+  blocks.forEach(a => { if(!a.id) return; blocks.forEach(b => {
+    if(a !== b && a.s < b.e && b.s < a.e) (out[a.id] = out[a.id] || []).push(b.name);
+  }); });
+  return out;
+}
+
+/** When you usually go to bed, as a real time today (default 11 PM). */
+function usualBedtime(){
+  const today = todayKey();
+  const s = (state.sleep[today] && state.sleep[today].bed) ? state.sleep[today] : lastSleepTimes(today);
+  let h = 23, m = 0;
+  if(s && s.bed){ [h, m] = s.bed.split(':').map(Number); if(h >= 5 && h < 18){ h = 23; m = 0; } }
+  const d = dayDate(today);
+  d.setHours(h, m, 0, 0);
+  if(h < 5) d.setDate(d.getDate()+1);
+  return d;
+}
+
+/** One line above the board: how much is planned against the time left
+ *  before bed (classes still to come taken out), and any clashes. */
+function renderPlanSummary(overlaps){
+  const el = document.getElementById('planSummary');
+  const list = isViewingToday() ? plansForToday().filter(q => q.plan.mins) : [];
+  if(!list.length){ el.classList.remove('show'); el.innerHTML = ''; return; }
+  const left = list.reduce((s,q) => s + Math.max(0, q.plan.mins - (q.totalMins||0)), 0);
+  const now = Date.now(), bed = usualBedtime();
+  let free = Math.max(0, Math.round((bed - now)/60000));
+  calendarEventsForDay(todayKey()).forEach(ev => {
+    if(classStateFor(todayKey(), ev) === 'excused') return;
+    const s = Math.max(now, new Date(ev.start).getTime()), e = Math.min(bed.getTime(), new Date(ev.end).getTime());
+    if(e > s) free -= Math.round((e - s)/60000);
+  });
+  free = Math.max(0, free);
+  const clashes = Object.keys(overlaps).length;
+  el.innerHTML = `Planned: <b>${left ? fmtMins(left) : '0m'}</b> left in ${list.length} quest${list.length===1?'':'s'} · <b>${free ? fmtMins(free) : '0m'}</b> free before bed (${fmtTime(bed)})`
+    + (left > free ? ` · <span class="warn">${fmtMins(left - free)} more than you have</span>` : '')
+    + (clashes ? ` · <span class="warn">${clashes} plan${clashes===1?'':'s'} overlap${clashes===1?'s':''}</span>` : '');
+  el.classList.add('show');
+}
+
+// --- Nudges: a planned start arriving, and a budget running out ---
+const planNudged = new Set();
+
+/** Today's open quest whose planned start has come (and whose slot isn't
+ *  over), that isn't being timed and has no time logged yet. */
+function duePlan(){
+  const now = Date.now(), today = todayKey();
+  return state.quests.find(q => {
+    if(q.status!=='todo' || !q.plan || q.plan.day !== today || !q.plan.start || q.totalMins) return false;
+    if(state.timer && state.timer.questId === q.id) return false;
+    const s = planStartDate(q.plan).getTime();
+    return s <= now && now < s + (q.plan.mins || 30)*60000;
+  }) || null;
+}
+
+function checkPlanNudges(){
+  const q = duePlan();
+  if(q){
+    const s = planStartDate(q.plan), k = q.id + '@' + s.getTime();
+    if(!planNudged.has(k)){
+      planNudged.add(k);
+      if(Date.now() - s < 10*60000){
+        showUndoToast(`Time for "${q.title}" · planned ${fmtTime(s)}`, () => startTimer('quest', q.id), 'Start');
+        // Redraw so the card flips to "Due now", unless you're mid-typing somewhere.
+        if(!/^(input|select|textarea)$/i.test((document.activeElement||{}).tagName || '')) render();
+      }
+    }
+  }
+  const t = state.timer, tq = t && t.kind==='quest' ? state.quests.find(o=>o.id===t.questId) : null;
+  if(tq && tq.plan && tq.plan.mins){
+    const used = (tq.totalMins||0) + (Date.now() - new Date(t.start))/60000, k = 'up@' + tq.id + '@' + t.start;
+    if(used >= tq.plan.mins && !planNudged.has(k)){
+      planNudged.add(k);
+      showUndoToast(`Time's up on "${tq.title}" · you gave it ${fmtMins(tq.plan.mins)}`);
+    }
+  }
+}
+
+/** Adds a new quest in the "To do" column. The start / end boxes (or plan
+ *  words typed after the title, "… 3p 45m") become its plan. If "repeat
+ *  daily" is checked, it also creates a recurring template. Logging time
+ *  you've already spent happens on the card. */
 function addQuest(){
   const titleEl = document.getElementById('newTitle');
-  const title = titleEl.value.trim();
+  const parsed = parsePlanText(titleEl.value);
+  const title = (parsed.title || titleEl.value).trim();
   if(!title){ flagFields(['newTitle']); return; }
+  const boxes = readPlanBoxes();
+  if(boxes.bad){ flagFields(boxes.bad); updateAddButton(); return; }
   const project = document.getElementById('newProject').value;
   try{ localStorage.setItem('trackr-last-category', project); }catch(e){}
   const recurring = document.getElementById('newRecurring').checked;
-  const hasTimes = document.getElementById('newStart').value || document.getElementById('newEnd').value;
 
-  let range = null;
-  if(hasTimes){
-    range = readRange('newStart','newEnd');
-    if(!range) return;
-  }
-
-  const key = selectedDayKey;
-  const msg = range ? `Logged "${title}" to ${dayLabel(key)}` : `Added "${title}"`;
-  withUndo(msg, () => {
+  const rawPlan = boxes.plan || (parsed.plan && parsed.title ? parsed.plan : null);
+  const plan = rawPlan ? buildPlan(rawPlan) : null;
+  withUndo(`Added "${title}"${plan && planLabel(plan) ? ' · ' + planLabel(plan) : ''}`, () => {
     let templateId = null;
     if(recurring){
       templateId = 'tpl-'+uid();
-      state.templates.push({ id: templateId, title, project });
+      const tpl = { id: templateId, title, project };
+      if(plan && (plan.start || plan.mins)) tpl.plan = { start: plan.start, mins: plan.mins };
+      state.templates.push(tpl);
     }
-    const id = uid();
-    if(range){
-      const { startDate, endDate, mins } = parseTimeRange(range.startVal, range.endVal, key);
-      state.quests.push({ id, title, project, status:'completed', totalMins: mins, completedAt: endDate.toISOString(), completedDay: key, templateId: null });
-      addLog(key, { title, project, actualMins:mins, start:startDate.toISOString(), end:endDate.toISOString(), ts:endDate.toISOString(), questId:id });
-      if(countsAsQuest(project)) state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
-      if(templateId) ensureRecurringQuests();
-    } else {
-      state.quests.push({ id, title, project, status:'todo', totalMins:0, completedAt:null, templateId, createdDay: todayKey() });
-    }
+    const q = { id: uid(), title, project, status:'todo', totalMins:0, completedAt:null, templateId, createdDay: todayKey() };
+    if(plan) q.plan = plan;
+    state.quests.push(q);
     titleEl.value = '';
     document.getElementById('newStart').value = '';
     document.getElementById('newEnd').value = '';
@@ -1705,6 +2124,27 @@ function finishQuest(id){
   });
 }
 
+/** Clicking a planned block on the clock: logs the quest from its planned
+ *  start to right now and completes it, as one undoable step. A timer
+ *  running on it is dropped so the time isn't counted twice. */
+function completePlanNow(id){
+  const q = state.quests.find(q=>q.id===id);
+  if(!q || q.status!=='todo' || !q.plan) return;
+  const start = planStartDate(q.plan), end = new Date();
+  if(!start) return;
+  if(end - start < 60000){ showUndoToast(`"${q.title}" hasn't started yet · planned ${fmtTime(start)}`); return; }
+  const problem = rangeProblem(start, end, false);
+  if(problem){ showUndoToast(problem); return; }
+  const mins = Math.round((end - start)/60000), key = q.plan.day;
+  withUndo(`Logged ${mins}m · completed "${q.title}"`, () => {
+    if(state.timer && state.timer.questId === id) state.timer = null;
+    const live = state.quests.find(o=>o.id===id);
+    addLog(key, { title:live.title, project:live.project, actualMins:mins, start:start.toISOString(), end:end.toISOString(), ts:end.toISOString(), questId:id });
+    live.totalMins = (live.totalMins||0) + mins;
+    markCompleted(id, key);
+  });
+}
+
 /** The state change behind completing a quest on `key` (no undo/render). */
 function markCompleted(id, key){
   const live = state.quests.find(o=>o.id===id);
@@ -1714,11 +2154,14 @@ function markCompleted(id, key){
     let movedMins = 0;
     (state.logs[key]||[]).forEach(l=>{ if(l.questId===id){ l.questId = cloneId; movedMins += l.actualMins||0; } });
     live.totalMins = Math.max(0, (live.totalMins||0) - movedMins);
-    state.quests.push(Object.assign({}, live, { id:cloneId, status:'completed', totalMins:movedMins, completedAt:whenISO, completedDay:key }));
+    const clone = Object.assign({}, live, { id:cloneId, status:'completed', totalMins:movedMins, completedAt:whenISO, completedDay:key });
+    state.quests.push(clone);
+    recordPlanResult(clone, key);
   } else {
     live.status = 'completed';
     live.completedAt = whenISO;
     live.completedDay = key;
+    recordPlanResult(live, key);
   }
   if(countsAsQuest(live.project)) state.completedCounts[key] = (state.completedCounts[key]||0) + 1;
 }
@@ -1747,6 +2190,7 @@ function uncompleteQuest(id){
     Object.keys(state.logs).forEach(dayKey=>{
       state.logs[dayKey] = state.logs[dayKey].filter(l => l.questId !== id);
     });
+    forgetPlanResult(id);
 
     const isDuplicateRecurring = live.templateId && state.quests.some(o=>o!==live && o.templateId===live.templateId && o.status==='todo');
     if(live.icsKey || isDuplicateRecurring){
@@ -1792,11 +2236,20 @@ function onDrop(e, targetStatus){
 /** "from yesterday" / "from Mon" / "9 days old" for a to-do added before today, else ''. */
 function leftoverAge(q){
   const today = todayKey();
-  if(q.status!=='todo' || !q.createdDay || q.createdDay >= today) return '';
-  const days = Math.round((dayDate(today) - dayDate(q.createdDay)) / 86400000);
-  if(days === 1) return 'from yesterday';
-  if(days < 7) return 'from ' + dayDate(q.createdDay).toLocaleDateString([], {weekday:'short'});
+  // A planned quest goes by its plan day: not a leftover until that day has passed.
+  const from = q.plan ? q.plan.day : q.createdDay, word = q.plan ? 'planned ' : 'from ';
+  if(q.status!=='todo' || !from || from >= today) return '';
+  const days = Math.round((dayDate(today) - dayDate(from)) / 86400000);
+  if(days === 1) return word + 'yesterday';
+  if(days < 7) return word + dayDate(from).toLocaleDateString([], {weekday:'short'});
   return days + ' days old';
+}
+
+/** Keeping a leftover moves an overdue plan to today (same time and length). */
+function keepQuestToday(q){
+  const today = todayKey();
+  q.keptDay = today;
+  if(q.plan && q.plan.day < today) q.plan.day = today;
 }
 
 function leftoverQuests(){
@@ -1825,13 +2278,12 @@ function renderLeftovers(){
 function keepLeftover(id){
   const q = state.quests.find(q=>q.id===id);
   if(!q) return;
-  q.keptDay = todayKey();
+  keepQuestToday(q);
   save(); render();
 }
 
 function keepAllLeftovers(){
-  const today = todayKey();
-  leftoverQuests().forEach(q => q.keptDay = today);
+  leftoverQuests().forEach(keepQuestToday);
   save(); render();
 }
 
@@ -2045,7 +2497,17 @@ function timerElapsedText(){
 function updateTimerDisplays(){
   const text = timerElapsedText();
   document.querySelectorAll('.timer-elapsed').forEach(el => { el.textContent = text; });
-  document.title = state.timer ? `● ${text} · trackR` : 'trackR';
+  // A timed quest with a planned length counts down, then counts how far over.
+  const t = state.timer, q = t && t.kind==='quest' ? state.quests.find(o=>o.id===t.questId) : null;
+  let budget = '', over = false;
+  if(q && q.plan && q.plan.mins){
+    const diff = q.plan.mins - ((q.totalMins||0) + (Date.now() - new Date(t.start))/60000);
+    over = diff < 0;
+    budget = over ? (Math.floor(-diff) ? `${fmtMins(Math.floor(-diff))} over` : `time's up`) : `${fmtMins(Math.ceil(diff))} left`;
+  }
+  document.querySelectorAll('.budget').forEach(el => { el.textContent = budget; el.classList.toggle('over', over); });
+  const due = t ? null : duePlan();
+  document.title = t ? `● ${text}${budget ? ' · '+budget : ''} · trackR` : due ? `▶ ${due.title} is up · trackR` : 'trackR';
 }
 
 // ---------------------------------------------------------------------------
@@ -2469,8 +2931,9 @@ function renderFitWidget(key){
  *  finishing it (see logQuestTime). "Done" cards can be reopened. Edit and
  *  remove sit as quiet icons top-right. Both kinds drag between columns. If
  *  this card is being edited, an inline rename/recategorize form shows instead. */
-function cardHTML(q){
+function cardHTML(q, ctx){
   const color = colorFor(q.project);
+  ctx = ctx || {};
 
   if(q.id === editingQuestId){
     return `<div class="card" style="--tag-color:${color}">
@@ -2501,18 +2964,36 @@ function cardHTML(q){
     const timeFields = timing ? '' : `
         <input type="text" autocomplete="off" spellcheck="false" class="tin qtime" data-next="qend-${q.id}" id="qstart-${q.id}" placeholder="start" onkeydown="handleTimeBackspace(event)" title="Already did it? When it started: 7, 730, 7:30p or now"/>
         <span class="arrow">→</span>
-        <input type="text" autocomplete="off" spellcheck="false" class="tin qtime" data-kind="end" data-pair="qstart-${q.id}" id="qend-${q.id}" placeholder="end" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ finishQuest('${q.id}'); })" title="When it ended, or how long (45m, 1h). Empty = now (today only). Enter logs it and marks it done"/>`;
-    return `<div class="card ${timing?'timing':''}" style="--tag-color:${color}" draggable="true" ondragstart="onDragStart(event,'${q.id}')">
+        <input type="text" autocomplete="off" spellcheck="false" class="tin qtime" data-kind="end" data-pair="qstart-${q.id}" id="qend-${q.id}" placeholder="${isViewingToday() ? 'now' : 'end'}" onkeydown="endFieldKeydown(event,'qstart-${q.id}', function(){ finishQuest('${q.id}'); })" title="When it ended, or how long (45m, 1h). Leave it empty to use the current time (today only). Enter logs it and marks it done"/>`;
+    // The plan: click it to change it ("3p 45m"), or "+ plan" to add one.
+    const plan = q.plan, today = todayKey();
+    let planHTML;
+    if(editingPlanId === q.id){
+      planHTML = `<input type="text" autocomplete="off" spellcheck="false" class="plan-edit" id="planEdit-${q.id}" value="${escapeHtml(planAsTyped(plan))}" placeholder="3p 45m" onkeydown="planEditKeydown(event,'${q.id}')" onblur="planEditBlur('${q.id}')" title="When and how long: 3p 45m, tmrw 9a 1h, 2-3p, or just 45m. Empty clears it"/>`;
+    } else if(plan){
+      const startAt = planStartDate(plan);
+      const state_ = plan.day < today ? 'late' : (startAt && startAt <= new Date() && !timing && !q.totalMins ? 'due' : '');
+      planHTML = `<span class="plan-tag ${state_}" onclick="startPlanEdit('${q.id}')" title="Click to change the plan">${escapeHtml(planLabel(plan) || 'today')}</span>`;
+    } else {
+      planHTML = `<span class="plan-tag none" onclick="startPlanEdit('${q.id}')" title="Give it a time and a length">+ plan</span>`;
+    }
+    const clash = (ctx.overlaps && ctx.overlaps[q.id]) ? `<span class="plan-note warn" title="These plans share the same time">overlaps ${escapeHtml(ctx.overlaps[q.id][0])}</span>` : '';
+    const nextTag = ctx.next === q.id && !timing ? `<span class="next-tag">${planStartDate(plan) <= new Date() ? 'Due now' : 'Next up'}</span>` : '';
+    const soFar = q.totalMins ? ` · ${q.totalMins}m ${plan && plan.mins ? 'of '+fmtMins(plan.mins) : 'so far'}` : '';
+    return `<div class="card ${timing?'timing':''} ${plan && plan.day > today ? 'later' : ''}" style="--tag-color:${color}" draggable="true" ondragstart="onDragStart(event,'${q.id}')">
       <div class="card-top">
         <div class="card-title">${escapeHtml(q.title)}</div>
         ${icons}
       </div>
       <div class="card-meta">
-        <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m so far' : ''}${leftoverAge(q) ? '<span class="age"> · '+leftoverAge(q)+'</span>' : ''}</span>
+        <span class="meta-left">
+          <span class="tag" style="color:${color}">${escapeHtml(q.project)}${soFar}${leftoverAge(q) && !plan ? '<span class="age"> · '+leftoverAge(q)+'</span>' : ''}</span>
+          ${planHTML}${nextTag}${clash}
+        </span>
         ${recurTag}
       </div>
       <div class="card-actions">
-        ${timerBtn}${timeFields}
+        ${timerBtn}${timing ? '<span class="budget"></span>' : ''}${timeFields}
         <button class="primary" onclick="finishQuest('${q.id}')" title="Mark it done (logs the times too, if you typed them)">✓ Done</button>
         <button class="log-only" onclick="logQuestTime('${q.id}')" title="Log these times but keep the quest open">Log only</button>
       </div>
@@ -2524,7 +3005,7 @@ function cardHTML(q){
       ${icons}
     </div>
     <div class="card-meta">
-      <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m' : ''}${q.icsKey ? ' · from calendar' : ''}</span>
+      <span class="tag" style="color:${color}">${escapeHtml(q.project)}${q.totalMins ? ' · '+q.totalMins+'m' : ''}${q.plan && q.plan.mins && q.totalMins ? ` <span class="${q.totalMins > q.plan.mins*1.2 ? 'over' : 'age'}">of ${fmtMins(q.plan.mins)} planned</span>` : ''}${q.icsKey ? ' · from calendar' : ''}</span>
       <span>${q.completedAt ? fmtTime(q.completedAt) : ''}</span>
     </div>
     <div class="card-actions">
@@ -2920,7 +3401,7 @@ function showTooltip(e, entry, hint){
   tip.innerHTML = `<div class="tt-title">${escapeHtml(entry.title)}</div><div class="tt-time">${escapeHtml(entry.project)} · ${startStr} – ${endStr}${durationStr}</div>${hint ? `<div class="tt-hint">${escapeHtml(hint)}</div>` : ''}`;
   tip.style.display = 'block';
   const x = e.clientX, y = e.clientY;
-  const tipWidth = 230, tipHeight = hint ? 66 : 50;
+  const tipWidth = 230, tipHeight = hint ? (hint.length > 40 ? 92 : 66) : 50;
   tip.style.left = Math.min(x+14, window.innerWidth - tipWidth) + 'px';
   tip.style.top = Math.min(y+14, window.innerHeight - tipHeight) + 'px';
 }
@@ -2962,7 +3443,7 @@ function clockEntriesFor(key){
 // icsEvents (optional) are events imported from a .ics file — drawn as a
 // thin dashed outer ring so they read as "reference/external", not tracked
 // time. Clicking one marks it attended (solid ring + a real logged arc).
-function renderClocks(log, isToday, icsEvents, dayKey){
+function renderClocks(log, isToday, icsEvents, dayKey, plans){
   const svgA = document.getElementById('clockA');
   const svgB = document.getElementById('clockB');
   const hourLabels = [12,1,2,3,4,5,6,7,8,9,10,11];
@@ -3066,6 +3547,25 @@ function renderClocks(log, isToday, icsEvents, dayKey){
   dayStart.setAttribute('class','clock-daystart');
   dayStart.style.pointerEvents = 'none';
   svgA.appendChild(dayStart);
+
+  // Planned blocks first, as dashed outlines in the category color, so
+  // logged time draws over them as the plan gets filled in.
+  buildPieces(plans || []).forEach(p => {
+    const path = document.createElementNS(SVG_NS,'path');
+    path.setAttribute('d', arcPath(CLOCK_CX,CLOCK_CY,CLOCK_R_OUTER,CLOCK_R_INNER,(p.start/720)*360,(p.end/720)*360));
+    path.setAttribute('class','clock-arc-plan');
+    path.style.stroke = colorFor(p.entry.project);
+    // The whole block takes clicks, not just its thin outline.
+    path.style.fill = 'transparent';
+    path.style.pointerEvents = 'all';
+    path.style.cursor = 'pointer';
+    const hint = 'Planned. Click when you finish: logs it from its start to now and marks it done';
+    path.addEventListener('mousemove', e=>showTooltip(e, p.entry, hint));
+    path.addEventListener('mouseenter', e=>showTooltip(e, p.entry, hint));
+    path.addEventListener('mouseleave', hideTooltip);
+    path.addEventListener('click', () => { hideTooltip(); completePlanNow(p.entry.questId); });
+    (p.half===0 ? svgA : svgB).appendChild(path);
+  });
 
   const logPieces = buildPieces(log);
   const maxDepthByHalf = assignDepths(logPieces);
@@ -3179,6 +3679,12 @@ document.addEventListener('focusout', e => {
 document.addEventListener('keydown', e => {
   const el = e.target;
   if(!el.classList || !el.classList.contains('tin') || !el.dataset.next) return;
+  // On a quest card, Enter in the start box with no end typed finishes it
+  // from that time to now. Space still hops to the end box to type one.
+  if(e.key==='Enter' && el.value.trim() && el.classList.contains('qtime') && isViewingToday()){
+    const endEl = document.getElementById(el.dataset.next);
+    if(endEl && !endEl.value.trim()){ e.preventDefault(); finishQuest(el.id.replace('qstart-', '')); return; }
+  }
   if((e.key==='Enter' || e.key===' ') && el.value.trim()){
     e.preventDefault();
     const next = document.getElementById(el.dataset.next);
@@ -3678,7 +4184,12 @@ const TREND_METRICS = {
   quests:  { label:'Quests',  amount: k => state.completedCounts[k]||0, goal: () => 4, fmt: v => String(v) },
   logged:  { label:'Logged',  amount: k => Math.round(dayStats(k).mins/6)/10, fmt: v => v+'h',
              spans: k => logSpans(k, l => l.project!=='Sleep'), byCategory: true, defaultRange: [420, 1440] },
-  rarity:  { label:'Rarity',  amount: k => dayRarity(k).tier, fmt: v => RARITY_TIERS[v].name }
+  rarity:  { label:'Rarity',  amount: k => dayRarity(k).tier, fmt: v => RARITY_TIERS[v].name },
+  // Time taken as a % of time planned, for quests finished that day.
+  plan:    { label:'Plan',    amount: k => planAccuracy(k), goal: () => 100, fmt: v => v+'%', gapWhenZero: true,
+             met: v => v >= 80 && v <= 120,
+             legend: 'Time taken vs planned. Gold = within 20% of the plan, red = off by more, hollow = nothing planned.',
+             detail: k => { const r = state.planDone[k] || []; return `took ${fmtMins(r.reduce((s,x)=>s+x.actual,0))} of ${fmtMins(r.reduce((s,x)=>s+x.plan,0))} planned`; } }
 };
 
 function trendMetric(){
@@ -3787,14 +4298,14 @@ function renderTrends(){
     svg += line(keys.map((k, i) => missing(values[i]) ? null : [cx(i), y(values[i])]));
     keys.forEach((k, i) => {
       const v = values[i];
-      const fill = isRarity ? RARITY_TIERS[v].color : !goal ? MET : v >= goal ? MET : SHORT;
-      anchors[k] = { x: cx(i), y: y(missing(v) ? min : v), text: `${shortDay(k)} · ${missing(v) ? 'not logged' : M.fmt(v)}${goal && !missing(v) ? ' / '+M.fmt(goal) : ''}` };
+      const fill = isRarity ? RARITY_TIERS[v].color : M.met ? (M.met(v) ? MET : SHORT) : !goal ? MET : v >= goal ? MET : SHORT;
+      anchors[k] = { x: cx(i), y: y(missing(v) ? min : v), text: `${shortDay(k)} · ${missing(v) ? 'not logged' : M.fmt(v)}${missing(v) ? '' : M.detail ? ' · '+M.detail(k) : goal ? ' / '+M.fmt(goal) : ''}` };
       svg += `<g class="col pick" onclick="trendClick('${k}')">${hit(k, i, `${dayLabel(k)} · ${missing(v) ? 'not logged' : M.fmt(v)}`)}${dot(cx(i), y(missing(v) ? min : v), fill, k, missing(v))}</g>`;
     });
     document.getElementById('trendSummary').textContent = !withData.length ? '' :
       isRarity ? 'avg ' + RARITY_TIERS[Math.round(values.reduce((a,b)=>a+b,0)/values.length)].name
                : 'avg ' + M.fmt(Math.round(avg*10)/10);
-    const legend = isRarity ? 'Dot color = that day’s tier.'
+    const legend = M.legend ? M.legend : isRarity ? 'Dot color = that day’s tier.'
       : goal ? `Gold = hit ${M.fmt(goal)}, red = short${M.gapWhenZero ? ', hollow = not logged' : ''}.` : 'Time logged each day.';
     document.getElementById('trendNote').textContent =
       (axisPref === 'time' && !M.spans ? `${M.label} has no time of day, so this shows amounts. ` : '') + legend + ' Click a dot for its value.';
@@ -3965,15 +4476,35 @@ function render(){
   const typed = {};
   document.querySelectorAll('#col-todo input.tin').forEach(i => { if(i.value) typed[i.id] = i.value; });
 
+  // To do runs in plan order: timed plans for today by start (overdue ones
+  // first), then everything unplanned, then what's planned for later days.
+  const planRank = q => {
+    const p = q.plan;
+    if(p && p.day > todayK) return [2, p.day + (p.start || '99:99')];
+    if(p && p.start) return [0, (p.day < todayK ? '0' : '1') + String(planStartDate(p).getTime())];
+    return [1, ''];
+  };
+  const todo = state.quests.filter(q=>q.status==='todo')
+    .map((q, i) => ({ q, i, r: planRank(q) }))
+    .sort((a, b) => a.r[0] - b.r[0] || (a.r[1] < b.r[1] ? -1 : a.r[1] > b.r[1] ? 1 : a.i - b.i))
+    .map(x => x.q);
   const cols = {
-    todo: state.quests.filter(q=>q.status==='todo'),
+    todo,
     completed: state.quests.filter(q=>q.status==='completed' && q.completedDay===key)
   };
+  const overlaps = planOverlaps();
+  const firstPlanned = todo.find(q => q.plan && q.plan.start && q.plan.day === todayK);
+  const ctx = { overlaps, next: viewingToday && firstPlanned ? firstPlanned.id : null };
+  renderPlanSummary(overlaps);
   ['todo','completed'].forEach(status=>{
     const el = document.getElementById('col-'+status);
     document.getElementById('cnt-'+status).textContent = cols[status].length;
     const emptyText = status==='todo' ? 'All clear. Add a quest above.' : (viewingToday ? 'Nothing done yet today.' : 'Nothing done this day.');
-    el.innerHTML = cols[status].length ? cols[status].map(cardHTML).join('') : `<div class="empty">${emptyText}</div>`;
+    let laterShown = false;
+    el.innerHTML = cols[status].length ? cols[status].map(q => {
+      const divider = status==='todo' && !laterShown && q.plan && q.plan.day > todayK ? (laterShown = true, '<div class="col-divider">Later</div>') : '';
+      return divider + cardHTML(q, ctx);
+    }).join('') : `<div class="empty">${emptyText}</div>`;
   });
   Object.entries(typed).forEach(([id, v]) => { const el = document.getElementById(id); if(el) el.value = v; });
   document.getElementById('completedDayLabel').textContent = viewingToday ? '' : '· '+dayLabel(key);
@@ -3995,7 +4526,12 @@ function render(){
   document.getElementById('statRot').textContent = s.rot;
 
   const icsEventsForDay = state.icsShowOnClocks ? calendarEventsForDay(key) : [];
-  renderClocks(clockEntriesFor(key), viewingToday, icsEventsForDay, key);
+  // Open plans for this day: outlines on the clocks, dim rows in the timeline.
+  const dayPlans = state.quests.filter(q => q.status==='todo' && q.plan && q.plan.day===key && q.plan.start && q.plan.mins).map(q => {
+    const ps = planStartDate(q.plan);
+    return { title:q.title, project:q.project, start:ps.toISOString(), end:new Date(ps.getTime() + q.plan.mins*60000).toISOString(), actualMins:q.plan.mins, _plan:true, questId:q.id };
+  });
+  renderClocks(clockEntriesFor(key), viewingToday, icsEventsForDay, key, dayPlans);
   renderICSDayList(key);
   document.getElementById('icsShowToggle').checked = state.icsShowOnClocks;
   document.getElementById('icsStatus').textContent = state.icsEvents.length
@@ -4003,10 +4539,16 @@ function render(){
     : 'No calendar imported yet.';
 
   const rows = document.getElementById('logrows');
-  if(s.log.length===0){
+  if(s.log.length===0 && !dayPlans.length){
     rows.innerHTML = `<div class="empty">Nothing logged for ${viewingToday ? 'today' : 'this day'} yet.</div>`;
   } else {
-    rows.innerHTML = [...s.log].sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts)).map(l => {
+    rows.innerHTML = [...s.log, ...dayPlans].sort((a,b)=>new Date(a.start||a.ts)-new Date(b.start||b.ts)).map(l => {
+      if(l._plan){
+        return `<div class="logrow planned">
+          <span class="lname">${escapeHtml(l.title)} <span style="color:${colorFor(l.project)}">· ${escapeHtml(l.project)}</span> · planned</span>
+          <span class="lright"><span class="ltime">${fmtTime(l.start)} – ${fmtTime(l.end)}</span><span class="ldur">${l.actualMins}m</span></span>
+        </div>`;
+      }
       const name = `<span class="lname">${escapeHtml(l.title)} <span style="color:${colorFor(l.project)}">· ${escapeHtml(l.project)}</span>${isFitnessProject(l.project) ? ' <span class="hint" style="color:var(--green)">FIT</span>' : ''}</span>`;
       if(l.id === editingLogId){
         return `<div class="logrow editing">
